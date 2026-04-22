@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAT - Gestão de Táxi</title>
+    <style>
+        :root {
+            --yellow: #f1c40f;
+            --dark: #2c3e50;
+            --white: #ffffff;
+            --green: #27ae60;
+            --red: #e74c3c;
+            --gray: #ecf0f1;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; margin: 0; padding: 0; }
+        body { background-color: var(--gray); color: var(--dark); overflow-x: hidden; }
+
+        #splash {
+            position: fixed; width: 100%; height: 100%;
+            background: var(--yellow); display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; z-index: 2000;
+        }
+
+        header {
+            background: var(--dark); color: var(--yellow);
+            padding: 15px; display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+
+        .summary-box {
+            background: var(--white); margin: 15px; padding: 15px;
+            border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; gap: 5px;
+        }
+        .summary-item span { display: block; font-size: 10px; color: #7f8c8d; font-weight: bold; }
+        .summary-item strong { font-size: 13px; }
+
+        #sidebar {
+            position: fixed; left: -250px; top: 0; width: 250px; height: 100%;
+            background: var(--dark); transition: 0.3s; z-index: 500; padding-top: 20px;
+        }
+        #sidebar a { padding: 15px 25px; text-decoration: none; color: white; display: block; cursor: pointer; border-bottom: 1px solid #34495e; }
+
+        .container { padding: 0 20px 20px 20px; }
+        .btn { padding: 12px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; font-size: 14px; text-align: center; }
+        .btn-block { width: 100%; }
+        .btn-income { background: var(--green); }
+        .btn-expense { background: var(--red); }
+        .btn-dark { background: var(--dark); }
+        .btn-gray { background: #95a5a6; }
+
+        .input-button { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; background-color: #f9f9f9; cursor: pointer; text-align: center; font-weight: bold; }
+
+        .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
+        .active { display: flex !important; }
+
+        .form-group { margin-bottom: 15px; }
+        label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
+
+        .history-card, .account-card {
+            background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #ccc;
+        }
+        .account-card { border-left-color: var(--dark); cursor: pointer; }
+        .card-RECEITA { border-left-color: var(--green); }
+        .card-DESPESA { border-left-color: var(--red); }
+        .account-badge { font-size: 10px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #666; }
+    </style>
+</head>
+<body>
+
+    <div id="splash">
+        <div style="font-size: 80px;">🚖</div>
+        <h1 style="color: var(--dark)">GAT TÁXI</h1>
+    </div>
+
+    <div id="sidebar">
+        <a onclick="toggleSidebar()" style="text-align: right; color: var(--yellow); font-size: 20px;">✖</a>
+        <a onclick="location.reload()">🏠 Início</a>
+        <a onclick="showAccountsScreen()">💳 Contas</a>
+        <a onclick="showConfig()">📂 Categorias</a>
+    </div>
+
+    <header>
+        <span onclick="toggleSidebar()" style="font-size: 24px; cursor: pointer;">☰</span>
+        <h2>GAT</h2>
+        <span onclick="openFilterScreen()" style="font-size: 24px; cursor: pointer;">🔍</span>
+    </header>
+
+    <div class="summary-box">
+        <div class="summary-item"><span>RECEITA</span><strong id="day-income" style="color: var(--green)">R$ 0,00</strong></div>
+        <div class="summary-item"><span>DESPESA</span><strong id="day-expense" style="color: var(--red)">R$ 0,00</strong></div>
+        <div class="summary-item"><span>SALDO</span><strong id="day-balance">R$ 0,00</strong></div>
+    </div>
+
+    <div class="container">
+        <div id="active-filter-tag" style="background: #d1ecf1; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 13px; display: none;">
+            Filtro ativo. <a href="#" onclick="renderAll()" style="color: #0c5460; font-weight: bold;">Limpar</a>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <button class="btn btn-income btn-block" onclick="openForm('RECEITA')">RECEITA</button>
+            <button class="btn btn-expense btn-block" onclick="openForm('DESPESA')">DESPESA</button>
+        </div>
+        <h3 id="history-title">Histórico Recente</h3>
+        <div id="history-list" style="margin-top:15px"></div>
+    </div>
+
+    <div id="form-screen" class="screen">
+        <h2 id="form-title">Lançamento</h2>
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+            <label>Valor (R$)</label>
+            <input type="text" id="amount" placeholder="R$ 0,00" oninput="maskMoney(this)">
+        </div>
+        <div class="form-group">
+            <label>Data e Hora</label>
+            <input type="datetime-local" id="datetime" class="input-button" onkeydown="return false">
+        </div>
+        <div class="form-group">
+            <label>Categoria</label>
+            <select id="category-dropdown"></select>
+        </div>
+        <div class="form-group">
+            <label>Conta/Favorecido</label>
+            <select id="account-dropdown"></select>
+        </div>
+        <div class="form-group">
+            <label>Observações</label>
+            <textarea id="obs" rows="2"></textarea>
+        </div>
+        <div style="display:flex; flex-direction: column; gap:10px; margin-top:10px;">
+            <button class="btn btn-dark btn-block" onclick="save()">Salvar</button>
+            <button class="btn btn-gray btn-block" id="delete-btn" style="display:none;" onclick="deleteEntry()">Excluir Registro</button>
+            <button class="btn btn-expense btn-block" onclick="closeScreens()">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="accounts-screen" class="screen">
+        <h2>Minhas Contas / Pagamentos</h2>
+        <button class="btn btn-income btn-block" style="margin-bottom: 15px;" onclick="openAddAccountForm()">+ Adicionar Nova Conta</button>
+        <div id="accounts-list" style="flex:1; overflow-y:auto;"></div>
+        <button class="btn btn-dark btn-block" onclick="closeScreens()" style="margin-top: 15px;">Voltar Início</button>
+    </div>
+
+    <div id="add-account-form-screen" class="screen">
+        <h2 id="acc-form-title">Cadastrar Conta</h2>
+        <input type="hidden" id="edit-acc-id">
+        
+        <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="new-acc-date" class="input-button" onkeydown="return false">
+        </div>
+        <div class="form-group">
+            <label>Nome do Favorecido</label>
+            <input type="text" id="new-acc-favored" placeholder="Ex: José da Silva">
+        </div>
+        <div class="form-group">
+            <label>Descrição da Conta</label>
+            <input type="text" id="new-acc-desc" placeholder="Ex: Aluguel do Carro">
+        </div>
+        <div class="form-group">
+            <label>Valor (R$)</label>
+            <input type="text" id="new-acc-value" placeholder="R$ 0,00" oninput="maskMoney(this)">
+        </div>
+        <div class="form-group">
+            <label>Observações</label>
+            <textarea id="new-acc-obs" rows="3" placeholder="Detalhes adicionais..."></textarea>
+        </div>
+        
+        <div style="display:flex; flex-direction: column; gap:10px; margin-top: auto; padding-top: 20px;">
+            <button class="btn btn-income btn-block" onclick="saveAccount()">Salvar</button>
+            <button class="btn btn-gray btn-block" id="delete-acc-btn" style="display:none;" onclick="deleteAccount()">Excluir Conta</button>
+            <button class="btn btn-expense btn-block" onclick="closeAddAccountForm()">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="config-screen" class="screen">
+        <h2>Categorias</h2>
+        <div class="form-group" style="background: #eee; padding: 15px; border-radius: 8px;">
+            <input type="text" id="new-cat-name" placeholder="Nome">
+            <select id="new-cat-type" style="margin-top:5px">
+                <option value="RECEITA">Receita</option>
+                <option value="DESPESA">Despesa</option>
+            </select>
+            <button class="btn btn-income btn-block" style="margin-top:10px" onclick="addCategory()">+ Adicionar</button>
+        </div>
+        <div id="config-cat-list" style="flex:1; overflow-y:auto; margin-bottom: 20px;"></div>
+        <button class="btn btn-dark btn-block" onclick="closeScreens()">Voltar</button>
+    </div>
+
+    <div id="filter-screen" class="screen">
+        <h2>Pesquisar</h2>
+        <div class="form-group"><label>Data Inicial</label><input type="date" id="filter-date-start" class="input-button" onkeydown="return false"></div>
+        <div class="form-group"><label>Data Final</label><input type="date" id="filter-date-end" class="input-button" onkeydown="return false"></div>
+        <div style="display:flex; flex-direction: column; gap:10px; margin-top: auto;">
+            <button class="btn btn-income btn-block" onclick="applyFilter()">Pesquisar</button>
+            <button class="btn btn-dark btn-block" onclick="closeScreens()">Voltar</button>
+        </div>
+    </div>
+
+    <script>
+        let data = JSON.parse(localStorage.getItem('gat_v3')) || [];
+        let categories = JSON.parse(localStorage.getItem('gat_cats_v3')) || [{ name: 'Corrida App', type: 'RECEITA' }, { name: 'Combustível', type: 'DESPESA' }];
+        let accounts = JSON.parse(localStorage.getItem('gat_accounts_detailed')) || [];
+        let currentType = '';
+
+        setTimeout(() => document.getElementById('splash').style.display = 'none', 1000);
+
+        function toggleSidebar() {
+            const s = document.getElementById('sidebar');
+            s.style.left = s.style.left === '0px' ? '-250px' : '0px';
+        }
+
+        function closeScreens() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); }
+        function showAccountsScreen() { toggleSidebar(); document.getElementById('accounts-screen').classList.add('active'); renderAccountsList(); }
+        function showConfig() { toggleSidebar(); document.getElementById('config-screen').classList.add('active'); renderConfigCats(); }
+        function openFilterScreen() { document.getElementById('filter-screen').classList.add('active'); }
+
+        function maskMoney(i) {
+            let v = i.value.replace(/\D/g,'');
+            v = (v/100).toFixed(2).replace(".", ",");
+            v = v.replace(/(\d)(\d{3})(\d{3}),/g, "$1.$2.$3,");
+            v = v.replace(/(\d)(\d{3}),/g, "$1.$2,");
+            i.value = "R$ " + v;
+        }
+
+        // --- GESTÃO DE CONTAS (EDITAR / EXCLUIR / LISTAR) ---
+        function openAddAccountForm(id = null) {
+            const screen = document.getElementById('add-account-form-screen');
+            const deleteBtn = document.getElementById('delete-acc-btn');
+            screen.classList.add('active');
+
+            if (id) {
+                const acc = accounts.find(a => a.id == id);
+                document.getElementById('acc-form-title').innerText = "Editar Conta";
+                document.getElementById('edit-acc-id').value = id;
+                document.getElementById('new-acc-date').value = acc.date;
+                document.getElementById('new-acc-favored').value = acc.favored;
+                document.getElementById('new-acc-desc').value = acc.desc;
+                document.getElementById('new-acc-value').value = acc.value;
+                document.getElementById('new-acc-obs').value = acc.obs || "";
+                deleteBtn.style.display = "block";
+            } else {
+                document.getElementById('acc-form-title').innerText = "Cadastrar Conta";
+                document.getElementById('edit-acc-id').value = "";
+                document.getElementById('new-acc-date').value = new Date().toISOString().split('T')[0];
+                document.getElementById('new-acc-favored').value = "";
+                document.getElementById('new-acc-desc').value = "";
+                document.getElementById('new-acc-value').value = "";
+                document.getElementById('new-acc-obs').value = "";
+                deleteBtn.style.display = "none";
+            }
+        }
+
+        function closeAddAccountForm() { document.getElementById('add-account-form-screen').classList.remove('active'); }
+
+        function saveAccount() {
+            const id = document.getElementById('edit-acc-id').value;
+            const favored = document.getElementById('new-acc-favored').value;
+            const desc = document.getElementById('new-acc-desc').value;
+            const val = document.getElementById('new-acc-value').value;
+            const date = document.getElementById('new-acc-date').value;
+
+            if(!favored || !desc || !val) return alert("Preencha Favorecido, Descrição e Valor.");
+
+            const accObj = {
+                id: id ? parseInt(id) : Date.now(),
+                date: date,
+                favored: favored,
+                desc: desc,
+                value: val,
+                obs: document.getElementById('new-acc-obs').value
+            };
+
+            if(id) {
+                const index = accounts.findIndex(a => a.id == id);
+                accounts[index] = accObj;
+            } else {
+                accounts.unshift(accObj);
+            }
+
+            localStorage.setItem('gat_accounts_detailed', JSON.stringify(accounts));
+            closeAddAccountForm();
+            renderAccountsList();
+        }
+
+        function deleteAccount() {
+            const id = document.getElementById('edit-acc-id').value;
+            if(confirm("Deseja realmente excluir esta conta?")) {
+                accounts = accounts.filter(a => a.id != id);
+                localStorage.setItem('gat_accounts_detailed', JSON.stringify(accounts));
+                closeAddAccountForm();
+                renderAccountsList();
+            }
+        }
+
+        function renderAccountsList() {
+            const list = document.getElementById('accounts-list');
+            // Ordenar por data (Mais recente primeiro)
+            const sortedAccounts = [...accounts].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            if(sortedAccounts.length === 0) {
+                list.innerHTML = "<p style='text-align:center; padding:20px; color:#888;'>Nenhuma conta registrada.</p>";
+                return;
+            }
+
+            list.innerHTML = sortedAccounts.map(a => `
+                <div class="account-card" onclick="openAddAccountForm(${a.id})">
+                    <div style="flex:1">
+                        <small style="color:var(--dark); font-weight:bold">${a.date.split('-').reverse().join('/')}</small><br>
+                        <strong>${a.favored}</strong><br>
+                        <span style="font-size:12px; color:#666">${a.desc}</span>
+                    </div>
+                    <div style="text-align:right">
+                        <strong style="color:var(--red)">${a.value}</strong>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- LANÇAMENTOS (CORRIDAS / DESPESAS) ---
+        function openForm(type, id = null) {
+            currentType = type;
+            document.getElementById('category-dropdown').innerHTML = categories.filter(c => c.type === type).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+            
+            let accOptions = accounts.length > 0 ? accounts.map(a => `<option value="${a.favored}">${a.favored}</option>`).join('') : '<option value="Dinheiro">Dinheiro</option>';
+            document.getElementById('account-dropdown').innerHTML = accOptions;
+
+            if (id) {
+                const item = data.find(x => x.id == id);
+                document.getElementById('edit-id').value = id;
+                document.getElementById('amount').value = item.amount;
+                document.getElementById('datetime').value = item.date;
+                document.getElementById('category-dropdown').value = item.category;
+                document.getElementById('account-dropdown').value = item.account || "Dinheiro";
+                document.getElementById('obs').value = item.obs || "";
+                document.getElementById('delete-btn').style.display = "block";
+            } else {
+                document.getElementById('edit-id').value = "";
+                document.getElementById('amount').value = "";
+                document.getElementById('obs').value = "";
+                const now = new Date(); now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                document.getElementById('datetime').value = now.toISOString().slice(0, 16);
+                document.getElementById('delete-btn').style.display = "none";
+            }
+            document.getElementById('form-screen').classList.add('active');
+        }
+
+        function save() {
+            const amount = document.getElementById('amount').value;
+            const id = document.getElementById('edit-id').value;
+            if(!amount || amount === "R$ 0,00") return;
+
+            const entry = {
+                id: id ? parseInt(id) : Date.now(),
+                type: currentType,
+                amount: amount,
+                numericValue: parseFloat(amount.replace("R$ ", "").replace(/\./g, "").replace(",", ".")),
+                date: document.getElementById('datetime').value,
+                category: document.getElementById('category-dropdown').value,
+                account: document.getElementById('account-dropdown').value,
+                obs: document.getElementById('obs').value
+            };
+
+            if(id) { data[data.findIndex(x => x.id == id)] = entry; } else { data.unshift(entry); }
+            localStorage.setItem('gat_v3', JSON.stringify(data));
+            closeScreens(); renderAll();
+        }
+
+        function deleteEntry() {
+            if(confirm("Excluir?")) {
+                data = data.filter(x => x.id != document.getElementById('edit-id').value);
+                localStorage.setItem('gat_v3', JSON.stringify(data));
+                closeScreens(); renderAll();
+            }
+        }
+
+        function renderAll(items = data) {
+            const list = document.getElementById('history-list');
+            list.innerHTML = items.map(e => `
+                <div class="history-card card-${e.type}" onclick="openForm('${e.type}', ${e.id})">
+                    <div>
+                        <strong>${e.category}</strong> <span class="account-badge">${e.account || 'Dinheiro'}</span><br>
+                        <small>${e.date.split('T')[0].split('-').reverse().join('/')} ${e.date.split('T')[1] || ''}</small>
+                    </div>
+                    <div style="color: ${e.type === 'RECEITA' ? 'var(--green)' : 'var(--red)'}; font-weight:bold">${e.type === 'RECEITA' ? '+' : '-'} ${e.amount}</div>
+                </div>
+            `).join('');
+
+            const today = new Date().toISOString().split('T')[0];
+            let r = 0, d = 0;
+            data.forEach(x => { if(x.date.startsWith(today)) { if(x.type === 'RECEITA') r += x.numericValue; else d += x.numericValue; } });
+            document.getElementById('day-income').innerText = "R$ " + r.toLocaleString('pt-BR', {minimumFractionDigits:2});
+            document.getElementById('day-expense').innerText = "R$ " + d.toLocaleString('pt-BR', {minimumFractionDigits:2});
+            const total = r - d;
+            document.getElementById('day-balance').innerText = "R$ " + total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+            document.getElementById('day-balance').style.color = total >= 0 ? 'var(--green)' : 'var(--red)';
+        }
+
+        function renderConfigCats() {
+            document.getElementById('config-cat-list').innerHTML = categories.map((c, i) => `
+                <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #ddd; background: white;">
+                    <span><strong>[${c.type}]</strong> ${c.name}</span>
+                    <span onclick="removeCat(${i})" style="color:red; font-weight:bold; cursor:pointer">🗑️</span>
+                </div>
+            `).join('');
+        }
+
+        function addCategory() {
+            const name = document.getElementById('new-cat-name').value;
+            const type = document.getElementById('new-cat-type').value;
+            if(!name) return;
+            categories.push({name, type}); localStorage.setItem('gat_cats_v3', JSON.stringify(categories));
+            document.getElementById('new-cat-name').value = ""; renderConfigCats();
+        }
+
+        function removeCat(i) { categories.splice(i, 1); localStorage.setItem('gat_cats_v3', JSON.stringify(categories)); renderConfigCats(); }
+
+        function applyFilter() {
+            const start = document.getElementById('filter-date-start').value;
+            const end = document.getElementById('filter-date-end').value;
+            if(!start || !end) return alert("Selecione as datas!");
+            const filtered = data.filter(item => { const itemDate = item.date.split('T')[0]; return itemDate >= start && itemDate <= end; });
+            closeScreens(); document.getElementById('active-filter-tag').style.display = "block"; renderAll(filtered);
+        }
+
+        renderAll();
+    </script>
+</body>
+</html>
