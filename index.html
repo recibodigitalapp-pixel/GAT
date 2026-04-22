@@ -51,8 +51,6 @@
         .btn-dark { background: var(--dark); }
         .btn-gray { background: #95a5a6; }
 
-        .input-button { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; background-color: #f9f9f9; cursor: pointer; text-align: center; font-weight: bold; }
-
         .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 1000; display: none; flex-direction: column; padding: 20px; overflow-y: auto; }
         .active { display: flex !important; }
 
@@ -60,29 +58,26 @@
         label { font-weight: bold; font-size: 14px; display: block; margin-bottom: 5px; }
         input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 16px; }
 
-        .history-card, .account-card {
+        .history-card {
             background: white; padding: 15px; border-radius: 8px; margin-bottom: 10px;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 5px solid #ccc;
         }
-        .account-card { border-left-color: var(--dark); cursor: pointer; }
         .card-RECEITA { border-left-color: var(--green); }
         .card-DESPESA { border-left-color: var(--red); }
-        .account-badge { font-size: 10px; background: #eee; padding: 2px 6px; border-radius: 4px; color: #666; }
     </style>
 </head>
 <body>
 
     <div id="splash">
-        <div style="font-size: 80px;">🚖</div>
+        <div style="font-size: 80px;">🚕</div>
         <h1 style="color: var(--dark)">GAT TÁXI</h1>
     </div>
 
     <div id="sidebar">
         <a onclick="toggleSidebar()" style="text-align: right; color: var(--yellow); font-size: 20px;">✖</a>
         <a onclick="location.reload()">🏠 Início</a>
-        <a onclick="showAccountsScreen()">💳 Contas</a>
-        <a onclick="showConfig()">📂 Categorias</a>
+        <a onclick="showConfig()">⚙️ Categorias</a>
     </div>
 
     <header>
@@ -98,9 +93,6 @@
     </div>
 
     <div class="container">
-        <div id="active-filter-tag" style="background: #d1ecf1; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 13px; display: none;">
-            Filtro ativo. <a href="#" onclick="renderAll()" style="color: #0c5460; font-weight: bold;">Limpar</a>
-        </div>
         <div style="display: flex; gap: 10px; margin-bottom: 20px;">
             <button class="btn btn-income btn-block" onclick="openForm('RECEITA')">RECEITA</button>
             <button class="btn btn-expense btn-block" onclick="openForm('DESPESA')">DESPESA</button>
@@ -118,63 +110,20 @@
         </div>
         <div class="form-group">
             <label>Data e Hora</label>
-            <input type="datetime-local" id="datetime" class="input-button" onkeydown="return false">
+            <input type="datetime-local" id="datetime">
         </div>
         <div class="form-group">
             <label>Categoria</label>
             <select id="category-dropdown"></select>
         </div>
         <div class="form-group">
-            <label>Conta/Favorecido</label>
-            <select id="account-dropdown"></select>
-        </div>
-        <div class="form-group">
             <label>Observações</label>
-            <textarea id="obs" rows="2"></textarea>
+            <textarea id="obs" rows="3" placeholder="Detalhes opcionais..."></textarea>
         </div>
         <div style="display:flex; flex-direction: column; gap:10px; margin-top:10px;">
             <button class="btn btn-dark btn-block" onclick="save()">Salvar</button>
             <button class="btn btn-gray btn-block" id="delete-btn" style="display:none;" onclick="deleteEntry()">Excluir Registro</button>
             <button class="btn btn-expense btn-block" onclick="closeScreens()">Cancelar</button>
-        </div>
-    </div>
-
-    <div id="accounts-screen" class="screen">
-        <h2>Minhas Contas / Pagamentos</h2>
-        <button class="btn btn-income btn-block" style="margin-bottom: 15px;" onclick="openAddAccountForm()">+ Adicionar Nova Conta</button>
-        <div id="accounts-list" style="flex:1; overflow-y:auto;"></div>
-        <button class="btn btn-dark btn-block" onclick="closeScreens()" style="margin-top: 15px;">Voltar Início</button>
-    </div>
-
-    <div id="add-account-form-screen" class="screen">
-        <h2 id="acc-form-title">Cadastrar Conta</h2>
-        <input type="hidden" id="edit-acc-id">
-        
-        <div class="form-group">
-            <label>Data</label>
-            <input type="date" id="new-acc-date" class="input-button" onkeydown="return false">
-        </div>
-        <div class="form-group">
-            <label>Nome do Favorecido</label>
-            <input type="text" id="new-acc-favored" placeholder="Ex: José da Silva">
-        </div>
-        <div class="form-group">
-            <label>Descrição da Conta</label>
-            <input type="text" id="new-acc-desc" placeholder="Ex: Aluguel do Carro">
-        </div>
-        <div class="form-group">
-            <label>Valor (R$)</label>
-            <input type="text" id="new-acc-value" placeholder="R$ 0,00" oninput="maskMoney(this)">
-        </div>
-        <div class="form-group">
-            <label>Observações</label>
-            <textarea id="new-acc-obs" rows="3" placeholder="Detalhes adicionais..."></textarea>
-        </div>
-        
-        <div style="display:flex; flex-direction: column; gap:10px; margin-top: auto; padding-top: 20px;">
-            <button class="btn btn-income btn-block" onclick="saveAccount()">Salvar</button>
-            <button class="btn btn-gray btn-block" id="delete-acc-btn" style="display:none;" onclick="deleteAccount()">Excluir Conta</button>
-            <button class="btn btn-expense btn-block" onclick="closeAddAccountForm()">Cancelar</button>
         </div>
     </div>
 
@@ -192,20 +141,13 @@
         <button class="btn btn-dark btn-block" onclick="closeScreens()">Voltar</button>
     </div>
 
-    <div id="filter-screen" class="screen">
-        <h2>Pesquisar</h2>
-        <div class="form-group"><label>Data Inicial</label><input type="date" id="filter-date-start" class="input-button" onkeydown="return false"></div>
-        <div class="form-group"><label>Data Final</label><input type="date" id="filter-date-end" class="input-button" onkeydown="return false"></div>
-        <div style="display:flex; flex-direction: column; gap:10px; margin-top: auto;">
-            <button class="btn btn-income btn-block" onclick="applyFilter()">Pesquisar</button>
-            <button class="btn btn-dark btn-block" onclick="closeScreens()">Voltar</button>
-        </div>
-    </div>
-
     <script>
         let data = JSON.parse(localStorage.getItem('gat_v3')) || [];
-        let categories = JSON.parse(localStorage.getItem('gat_cats_v3')) || [{ name: 'Corrida App', type: 'RECEITA' }, { name: 'Combustível', type: 'DESPESA' }];
-        let accounts = JSON.parse(localStorage.getItem('gat_accounts_detailed')) || [];
+        let categories = JSON.parse(localStorage.getItem('gat_cats_v3')) || [
+            { name: 'Corrida App', type: 'RECEITA' }, 
+            { name: 'Combustível', type: 'DESPESA' },
+            { name: 'Alimentação', type: 'DESPESA' }
+        ];
         let currentType = '';
 
         setTimeout(() => document.getElementById('splash').style.display = 'none', 1000);
@@ -216,9 +158,7 @@
         }
 
         function closeScreens() { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); }
-        function showAccountsScreen() { toggleSidebar(); document.getElementById('accounts-screen').classList.add('active'); renderAccountsList(); }
         function showConfig() { toggleSidebar(); document.getElementById('config-screen').classList.add('active'); renderConfigCats(); }
-        function openFilterScreen() { document.getElementById('filter-screen').classList.add('active'); }
 
         function maskMoney(i) {
             let v = i.value.replace(/\D/g,'');
@@ -228,107 +168,12 @@
             i.value = "R$ " + v;
         }
 
-        // --- GESTÃO DE CONTAS (EDITAR / EXCLUIR / LISTAR) ---
-        function openAddAccountForm(id = null) {
-            const screen = document.getElementById('add-account-form-screen');
-            const deleteBtn = document.getElementById('delete-acc-btn');
-            screen.classList.add('active');
-
-            if (id) {
-                const acc = accounts.find(a => a.id == id);
-                document.getElementById('acc-form-title').innerText = "Editar Conta";
-                document.getElementById('edit-acc-id').value = id;
-                document.getElementById('new-acc-date').value = acc.date;
-                document.getElementById('new-acc-favored').value = acc.favored;
-                document.getElementById('new-acc-desc').value = acc.desc;
-                document.getElementById('new-acc-value').value = acc.value;
-                document.getElementById('new-acc-obs').value = acc.obs || "";
-                deleteBtn.style.display = "block";
-            } else {
-                document.getElementById('acc-form-title').innerText = "Cadastrar Conta";
-                document.getElementById('edit-acc-id').value = "";
-                document.getElementById('new-acc-date').value = new Date().toISOString().split('T')[0];
-                document.getElementById('new-acc-favored').value = "";
-                document.getElementById('new-acc-desc').value = "";
-                document.getElementById('new-acc-value').value = "";
-                document.getElementById('new-acc-obs').value = "";
-                deleteBtn.style.display = "none";
-            }
-        }
-
-        function closeAddAccountForm() { document.getElementById('add-account-form-screen').classList.remove('active'); }
-
-        function saveAccount() {
-            const id = document.getElementById('edit-acc-id').value;
-            const favored = document.getElementById('new-acc-favored').value;
-            const desc = document.getElementById('new-acc-desc').value;
-            const val = document.getElementById('new-acc-value').value;
-            const date = document.getElementById('new-acc-date').value;
-
-            if(!favored || !desc || !val) return alert("Preencha Favorecido, Descrição e Valor.");
-
-            const accObj = {
-                id: id ? parseInt(id) : Date.now(),
-                date: date,
-                favored: favored,
-                desc: desc,
-                value: val,
-                obs: document.getElementById('new-acc-obs').value
-            };
-
-            if(id) {
-                const index = accounts.findIndex(a => a.id == id);
-                accounts[index] = accObj;
-            } else {
-                accounts.unshift(accObj);
-            }
-
-            localStorage.setItem('gat_accounts_detailed', JSON.stringify(accounts));
-            closeAddAccountForm();
-            renderAccountsList();
-        }
-
-        function deleteAccount() {
-            const id = document.getElementById('edit-acc-id').value;
-            if(confirm("Deseja realmente excluir esta conta?")) {
-                accounts = accounts.filter(a => a.id != id);
-                localStorage.setItem('gat_accounts_detailed', JSON.stringify(accounts));
-                closeAddAccountForm();
-                renderAccountsList();
-            }
-        }
-
-        function renderAccountsList() {
-            const list = document.getElementById('accounts-list');
-            // Ordenar por data (Mais recente primeiro)
-            const sortedAccounts = [...accounts].sort((a, b) => new Date(b.date) - new Date(a.date));
-            
-            if(sortedAccounts.length === 0) {
-                list.innerHTML = "<p style='text-align:center; padding:20px; color:#888;'>Nenhuma conta registrada.</p>";
-                return;
-            }
-
-            list.innerHTML = sortedAccounts.map(a => `
-                <div class="account-card" onclick="openAddAccountForm(${a.id})">
-                    <div style="flex:1">
-                        <small style="color:var(--dark); font-weight:bold">${a.date.split('-').reverse().join('/')}</small><br>
-                        <strong>${a.favored}</strong><br>
-                        <span style="font-size:12px; color:#666">${a.desc}</span>
-                    </div>
-                    <div style="text-align:right">
-                        <strong style="color:var(--red)">${a.value}</strong>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // --- LANÇAMENTOS (CORRIDAS / DESPESAS) ---
         function openForm(type, id = null) {
             currentType = type;
-            document.getElementById('category-dropdown').innerHTML = categories.filter(c => c.type === type).map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-            
-            let accOptions = accounts.length > 0 ? accounts.map(a => `<option value="${a.favored}">${a.favored}</option>`).join('') : '<option value="Dinheiro">Dinheiro</option>';
-            document.getElementById('account-dropdown').innerHTML = accOptions;
+            document.getElementById('form-title').innerText = type === 'RECEITA' ? 'Nova Receita' : 'Nova Despesa';
+            document.getElementById('category-dropdown').innerHTML = categories
+                .filter(c => c.type === type)
+                .map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 
             if (id) {
                 const item = data.find(x => x.id == id);
@@ -336,7 +181,6 @@
                 document.getElementById('amount').value = item.amount;
                 document.getElementById('datetime').value = item.date;
                 document.getElementById('category-dropdown').value = item.category;
-                document.getElementById('account-dropdown').value = item.account || "Dinheiro";
                 document.getElementById('obs').value = item.obs || "";
                 document.getElementById('delete-btn').style.display = "block";
             } else {
@@ -362,7 +206,6 @@
                 numericValue: parseFloat(amount.replace("R$ ", "").replace(/\./g, "").replace(",", ".")),
                 date: document.getElementById('datetime').value,
                 category: document.getElementById('category-dropdown').value,
-                account: document.getElementById('account-dropdown').value,
                 obs: document.getElementById('obs').value
             };
 
@@ -372,28 +215,34 @@
         }
 
         function deleteEntry() {
-            if(confirm("Excluir?")) {
+            if(confirm("Excluir este registro?")) {
                 data = data.filter(x => x.id != document.getElementById('edit-id').value);
                 localStorage.setItem('gat_v3', JSON.stringify(data));
                 closeScreens(); renderAll();
             }
         }
 
-        function renderAll(items = data) {
+        function renderAll() {
             const list = document.getElementById('history-list');
-            list.innerHTML = items.map(e => `
+            list.innerHTML = data.map(e => `
                 <div class="history-card card-${e.type}" onclick="openForm('${e.type}', ${e.id})">
                     <div>
-                        <strong>${e.category}</strong> <span class="account-badge">${e.account || 'Dinheiro'}</span><br>
-                        <small>${e.date.split('T')[0].split('-').reverse().join('/')} ${e.date.split('T')[1] || ''}</small>
+                        <strong>${e.category}</strong><br>
+                        <small>${e.date.replace('T', ' ')}</small>
                     </div>
-                    <div style="color: ${e.type === 'RECEITA' ? 'var(--green)' : 'var(--red)'}; font-weight:bold">${e.type === 'RECEITA' ? '+' : '-'} ${e.amount}</div>
+                    <div style="color: ${e.type === 'RECEITA' ? 'var(--green)' : 'var(--red)'}; font-weight:bold">
+                        ${e.type === 'RECEITA' ? '+' : '-'} ${e.amount}
+                    </div>
                 </div>
             `).join('');
 
             const today = new Date().toISOString().split('T')[0];
             let r = 0, d = 0;
-            data.forEach(x => { if(x.date.startsWith(today)) { if(x.type === 'RECEITA') r += x.numericValue; else d += x.numericValue; } });
+            data.forEach(x => { 
+                if(x.date.startsWith(today)) { 
+                    if(x.type === 'RECEITA') r += x.numericValue; else d += x.numericValue; 
+                } 
+            });
             document.getElementById('day-income').innerText = "R$ " + r.toLocaleString('pt-BR', {minimumFractionDigits:2});
             document.getElementById('day-expense').innerText = "R$ " + d.toLocaleString('pt-BR', {minimumFractionDigits:2});
             const total = r - d;
@@ -405,7 +254,7 @@
             document.getElementById('config-cat-list').innerHTML = categories.map((c, i) => `
                 <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #ddd; background: white;">
                     <span><strong>[${c.type}]</strong> ${c.name}</span>
-                    <span onclick="removeCat(${i})" style="color:red; font-weight:bold; cursor:pointer">🗑️</span>
+                    <span onclick="removeCat(${i})" style="color:red; font-weight:bold; cursor:pointer">EXCLUIR</span>
                 </div>
             `).join('');
         }
@@ -419,14 +268,6 @@
         }
 
         function removeCat(i) { categories.splice(i, 1); localStorage.setItem('gat_cats_v3', JSON.stringify(categories)); renderConfigCats(); }
-
-        function applyFilter() {
-            const start = document.getElementById('filter-date-start').value;
-            const end = document.getElementById('filter-date-end').value;
-            if(!start || !end) return alert("Selecione as datas!");
-            const filtered = data.filter(item => { const itemDate = item.date.split('T')[0]; return itemDate >= start && itemDate <= end; });
-            closeScreens(); document.getElementById('active-filter-tag').style.display = "block"; renderAll(filtered);
-        }
 
         renderAll();
     </script>
