@@ -11,6 +11,7 @@
             --danger: #e74c3c;
             --dark: #2c3e50;
             --light: #ecf0f1;
+            --info: #3498db;
         }
 
         body {
@@ -27,10 +28,11 @@
             transition: 0.3s; z-index: 2000; padding: 20px; box-sizing: border-box;
         }
         .sidebar.active { left: 0; }
-        .menu-item { padding: 15px; background: var(--light); margin-bottom: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; }
+        .sidebar-header { border-bottom: 1px solid #eee; margin-bottom: 15px; padding-bottom: 10px; }
+        .menu-item { padding: 15px; background: var(--light); margin-bottom: 10px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .overlay-menu { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
 
-        /* TOP BAR ATUALIZADA */
+        /* TOP BAR */
         .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; height: 50px; position: relative; }
         .menu-icon, .filter-icon { font-size: 1.4rem; cursor: pointer; background: var(--dark); color: white; padding: 6px 12px; border-radius: 8px; z-index: 2; border: none; }
         .top-bar h2 { position: absolute; left: 0; right: 0; text-align: center; margin: 0; font-size: 1.5rem; letter-spacing: 2px; z-index: 1; }
@@ -71,8 +73,16 @@
     
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header"><h3>Configurações</h3></div>
-        <div class="menu-item" onclick="abrirModalConfig('receita')">⚙️ Receitas <span>❯</span></div>
-        <div class="menu-item" onclick="abrirModalConfig('despesa')">⚙️ Despesas <span>❯</span></div>
+        <div class="menu-item" onclick="abrirModalConfig('receita')">⚙️ Categorias Receita <span>❯</span></div>
+        <div class="menu-item" onclick="abrirModalConfig('despesa')">⚙️ Categorias Despesa <span>❯</span></div>
+        
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+            <p style="font-size: 0.8rem; font-weight: bold; color: #999; margin-bottom: 10px;">SEGURANÇA DOS DADOS</p>
+            <div class="menu-item" style="background: #e3f2fd; color: #1976d2;" onclick="exportarDados()">💾 Exportar Backup</div>
+            <div class="menu-item" style="background: #fff3e0; color: #ef6c00;" onclick="document.getElementById('inputImport').click()">📂 Importar Backup</div>
+            <input type="file" id="inputImport" style="display:none" accept=".json" onchange="importarDados(this)">
+        </div>
+
         <button class="btn-main" style="background:var(--dark); width:100%; margin-top: 20px;" onclick="toggleMenu()">Fechar Menu</button>
     </div>
 
@@ -163,8 +173,12 @@
     </div>
 
     <script>
-        let movimentacoes = JSON.parse(localStorage.getItem('gat_mov_v9')) || [];
-        let categorias = JSON.parse(localStorage.getItem('gat_cat_v9')) || {
+        // Versão da chave do LocalStorage
+        const KEY_MOV = 'gat_mov_v9';
+        const KEY_CAT = 'gat_cat_v9';
+
+        let movimentacoes = JSON.parse(localStorage.getItem(KEY_MOV)) || [];
+        let categorias = JSON.parse(localStorage.getItem(KEY_CAT)) || {
             receita: ['Corrida App', 'Corrida Rua', 'Particular'],
             despesa: ['Combustível', 'Alimentação', 'Manutenção']
         };
@@ -172,6 +186,50 @@
         let idEditando = null;
         let filtroAtual = { inicio: null, fim: null, tipo: 'todos' };
 
+        // --- FUNÇÕES DE BACKUP (NOVO) ---
+        function exportarDados() {
+            const dadosParaExportar = {
+                movimentacoes: movimentacoes,
+                categorias: categorias,
+                dataExportacao: new Date().toLocaleString()
+            };
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadosParaExportar));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "backup_gat_pro.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+            alert("Backup gerado com sucesso! Guarde o arquivo em um local seguro.");
+        }
+
+        function importarDados(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dadosImportados = JSON.parse(e.target.result);
+                    if (confirm("Isso irá substituir seus dados atuais. Deseja continuar?")) {
+                        movimentacoes = dadosImportados.movimentacoes || [];
+                        categorias = dadosImportados.categorias || categorias;
+                        
+                        localStorage.setItem(KEY_MOV, JSON.stringify(movimentacoes));
+                        localStorage.setItem(KEY_CAT, JSON.stringify(categorias));
+                        
+                        alert("Dados importados com sucesso!");
+                        location.reload(); // Recarrega para aplicar tudo
+                    }
+                } catch (err) {
+                    alert("Erro ao ler o arquivo de backup. Verifique se o arquivo está correto.");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // --- FUNÇÕES DE UI ---
         function toggleMenu() {
             const side = document.getElementById('sidebar');
             const over = document.getElementById('overlayMenu');
@@ -192,7 +250,6 @@
             i.value = v;
         }
 
-        // FILTROS
         function abrirFiltro() {
             const hoje = new Date().toISOString().split('T')[0];
             document.getElementById('filtroDataInicio').value = filtroAtual.inicio || hoje;
@@ -214,13 +271,13 @@
             renderMain();
         }
 
-        // CATEGORIAS
         function abrirModalConfig(tipo) {
             tipoEditando = tipo; toggleMenu();
             document.getElementById('tituloConfig').innerText = tipo === 'receita' ? 'Categorias de Receita' : 'Categorias de Despesa';
             renderListaConfig();
             document.getElementById('modalConfig').style.display = 'flex';
         }
+
         function renderListaConfig() {
             const lista = document.getElementById('listaCatsConfig');
             lista.innerHTML = '';
@@ -228,22 +285,23 @@
                 lista.innerHTML += `<li><span>${c}</span> <button style="color:var(--danger); border:none; background:none; font-weight:bold;" onclick="removerCat(${index})">✕</button></li>`;
             });
         }
+
         function addCategoria() {
             const input = document.getElementById('novoNomeCat');
             if(input.value.trim()){
                 categorias[tipoEditando].push(input.value.trim());
                 input.value = '';
-                localStorage.setItem('gat_cat_v9', JSON.stringify(categorias));
+                localStorage.setItem(KEY_CAT, JSON.stringify(categorias));
                 renderListaConfig();
             }
         }
+
         function removerCat(index) {
             categorias[tipoEditando].splice(index, 1);
-            localStorage.setItem('gat_cat_v9', JSON.stringify(categorias));
+            localStorage.setItem(KEY_CAT, JSON.stringify(categorias));
             renderListaConfig();
         }
 
-        // MOVIMENTAÇÕES
         function abrirModalCadastro(tipo, id = null) {
             tipoEditando = tipo; idEditando = id;
             const select = document.getElementById('categoriaSelect');
@@ -282,7 +340,7 @@
             } else {
                 movimentacoes.unshift(dados);
             }
-            localStorage.setItem('gat_mov_v9', JSON.stringify(movimentacoes));
+            localStorage.setItem(KEY_MOV, JSON.stringify(movimentacoes));
             fecharModais();
             renderMain();
         }
@@ -290,7 +348,7 @@
         function excluirMovimento() {
             if(confirm("Excluir registro?")) {
                 movimentacoes = movimentacoes.filter(x => x.id !== idEditando);
-                localStorage.setItem('gat_mov_v9', JSON.stringify(movimentacoes));
+                localStorage.setItem(KEY_MOV, JSON.stringify(movimentacoes));
                 fecharModais();
                 renderMain();
             }
@@ -304,7 +362,6 @@
             
             let filtrados = movimentacoes;
 
-            // Lógica de Filtro
             if (filtroAtual.inicio && filtroAtual.fim) {
                 filtrados = movimentacoes.filter(m => m.data >= filtroAtual.inicio && m.data <= filtroAtual.fim);
                 if(filtroAtual.tipo !== 'todos') {
@@ -337,6 +394,7 @@
             document.getElementById('saldo-total').innerText = `R$ ${(e-s).toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
             if(filtrados.length === 0) lista.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">Nenhum registro encontrado.</p>';
         }
+
         renderMain();
     </script>
 </body>
