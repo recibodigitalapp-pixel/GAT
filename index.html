@@ -69,8 +69,8 @@
         .modal { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 25px; box-sizing: border-box; position: relative; max-height: 90vh; overflow-y: auto; }
         
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 0.9rem; margin-bottom: 8px; font-weight: bold; }
-        .form-group input, .form-group select { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; margin-bottom: 6px; font-weight: bold; color: #555; }
+        .form-group input, .form-group select { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 1rem; font-family: inherit; }
 
         /* CONFIRMAÇÃO BONITA */
         .confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
@@ -119,12 +119,31 @@
         <div id="lista-movimentacoes"></div>
     </div>
 
+    <!-- MODAL CADASTRO COM DATAPICKER -->
     <div class="modal-overlay" id="modalCadastro">
         <div class="modal">
-            <h2 id="tituloCadastro">Novo</h2>
-            <div class="form-group"><label>Valor (R$)</label><input type="text" id="valorInput" inputmode="decimal" oninput="mascaraMoeda(this)"></div>
-            <div class="form-group"><label>Categoria</label><select id="categoriaSelect"></select></div>
-            <div class="form-group"><label>Observação</label><input type="text" id="obsInput"></div>
+            <h2 id="tituloCadastro" style="margin-top:0">Novo Registro</h2>
+            
+            <div class="form-group">
+                <label>Data</label>
+                <input type="date" id="dataInput">
+            </div>
+
+            <div class="form-group">
+                <label>Valor (R$)</label>
+                <input type="text" id="valorInput" inputmode="decimal" oninput="mascaraMoeda(this)" placeholder="0,00">
+            </div>
+
+            <div class="form-group">
+                <label>Categoria</label>
+                <select id="categoriaSelect"></select>
+            </div>
+
+            <div class="form-group">
+                <label>Observação (Opcional)</label>
+                <input type="text" id="obsInput" placeholder="Ex: Corrida do centro">
+            </div>
+
             <button class="btn-main" style="background:var(--dark); width:100%;" onclick="salvarMovimento()">SALVAR</button>
             <button class="btn-main" style="background:none; color: #999; width:100%; margin-top:10px;" onclick="fecharModais()">Cancelar</button>
         </div>
@@ -154,8 +173,9 @@
     </div>
 
     <script>
-        let movimentacoes = JSON.parse(localStorage.getItem('gat_mov_v9')) || [];
-        let categorias = JSON.parse(localStorage.getItem('gat_cat_v9')) || {
+        // Versão do banco de dados alterada para garantir compatibilidade com novos campos
+        let movimentacoes = JSON.parse(localStorage.getItem('gat_mov_v10')) || [];
+        let categorias = JSON.parse(localStorage.getItem('gat_cat_v10')) || {
             receita: ['Corrida App', 'Corrida Rua', 'Particular'],
             despesa: ['Combustível', 'Alimentação', 'Manutenção']
         };
@@ -177,26 +197,44 @@
 
         function abrirModalCadastro(tipo) {
             tipoAtual = tipo;
+            document.getElementById('tituloCadastro').innerText = tipo === 'receita' ? 'Nova Receita' : 'Nova Despesa';
+            
+            // Preenche o seletor de categorias
             const select = document.getElementById('categoriaSelect');
             select.innerHTML = '';
             categorias[tipo].forEach(c => select.innerHTML += `<option value="${c}">${c}</option>`);
+            
+            // Reseta campos
             document.getElementById('valorInput').value = '';
+            document.getElementById('obsInput').value = '';
+            
+            // Define a data de hoje como padrão no input
+            const hoje = new Date().toISOString().split('T')[0];
+            document.getElementById('dataInput').value = hoje;
+            
             document.getElementById('modalCadastro').style.display = 'flex';
         }
 
         function salvarMovimento() {
             const valStr = document.getElementById('valorInput').value;
+            const dataSel = document.getElementById('dataInput').value;
             const valor = parseFloat(valStr.replace(/\./g, '').replace(',', '.'));
+            
             if(!valor) return alert("Insira um valor!");
+            if(!dataSel) return alert("Selecione uma data!");
 
             movimentacoes.unshift({
-                id: Date.now(), tipo: tipoAtual, valor: valor,
+                id: Date.now(), 
+                tipo: tipoAtual, 
+                valor: valor,
                 categoria: document.getElementById('categoriaSelect').value,
                 obs: document.getElementById('obsInput').value,
-                data: new Date().toISOString().split('T')[0]
+                data: dataSel // Salva a data escolhida pelo usuário
             });
-            localStorage.setItem('gat_mov_v9', JSON.stringify(movimentacoes));
-            fecharModais(); render();
+
+            localStorage.setItem('gat_mov_v10', JSON.stringify(movimentacoes));
+            fecharModais(); 
+            render();
         }
 
         // --- CATEGORIAS ---
@@ -219,7 +257,7 @@
             document.getElementById('modalConfirmacao').style.display = 'flex';
             document.getElementById('btnConfirmarExclusao').onclick = function() {
                 categorias[tipoAtual].splice(indexParaRemover, 1);
-                localStorage.setItem('gat_cat_v9', JSON.stringify(categorias));
+                localStorage.setItem('gat_cat_v10', JSON.stringify(categorias));
                 renderCategorias(); fecharConfirmacao();
             };
         }
@@ -229,22 +267,24 @@
             if(val) {
                 categorias[tipoAtual].push(val);
                 document.getElementById('novaCatInput').value = '';
-                localStorage.setItem('gat_cat_v9', JSON.stringify(categorias));
+                localStorage.setItem('gat_cat_v10', JSON.stringify(categorias));
                 renderCategorias();
             }
         }
 
-        // --- RENDER LISTA PRINCIPAL ---
+        // --- RENDER LISTA PRINCIPAL (Filtrado por data de hoje por padrão) ---
         function render() {
             const lista = document.getElementById('lista-movimentacoes');
             const hoje = new Date().toISOString().split('T')[0];
             let e = 0, s = 0;
             
             lista.innerHTML = '';
+            
+            // Filtra o que aparece na tela inicial (somente o que foi cadastrado como 'hoje')
             const filtrados = movimentacoes.filter(m => m.data === hoje);
 
             if(filtrados.length === 0) {
-                lista.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Nenhuma corrida hoje.</p>';
+                lista.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Nenhuma movimentação hoje.</p>';
             }
 
             filtrados.forEach(m => {
@@ -252,8 +292,10 @@
                 lista.innerHTML += `
                     <div class="movimentacao">
                         <div><b>${m.categoria}</b><br><small style="color:#888">${m.obs || ''}</small></div>
-                        <div style="font-weight:bold; color:${m.tipo==='receita'?'var(--success)':'var(--danger)'}">
-                            ${m.tipo==='receita'?'+':'-'} R$ ${m.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}
+                        <div style="text-align:right">
+                            <div style="font-weight:bold; color:${m.tipo==='receita'?'var(--success)':'var(--danger)'}">
+                                ${m.tipo==='receita'?'+':'-'} R$ ${m.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}
+                            </div>
                         </div>
                     </div>`;
             });
