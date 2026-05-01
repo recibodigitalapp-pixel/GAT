@@ -21,8 +21,7 @@
         .view { display: flex; flex-direction: column; min-height: 100vh; }
 
         header { background-color: var(--primary-yellow); display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; font-weight: bold; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .header-btn { font-size: 22px; cursor: pointer; }
-
+        
         /* Sidebar */
         .sidebar { height: 100%; width: 0; position: fixed; z-index: 1000; top: 0; left: 0; background-color: var(--sidebar-yellow); overflow-x: hidden; transition: 0.3s; padding-top: 20px; }
         .sidebar-header { text-align: center; font-weight: bold; margin-bottom: 30px; }
@@ -30,30 +29,55 @@
         .menu-item i { margin-right: 15px; font-size: 24px; width: 30px; text-align: center; }
         .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay-dark); z-index: 999; }
 
-        /* Home Components */
+        /* Modais */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 20px; z-index: 1001; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .modal h3 { margin-top: 0; color: #333; margin-bottom: 10px; }
+        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .modal-field { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; text-align: center; }
+        .modal-field:focus { border-color: var(--primary-yellow); }
+
+        /* Home */
         .action-buttons { display: flex; justify-content: space-around; padding: 20px; gap: 15px; }
         .btn-main { border: none; border-radius: 25px; padding: 18px; color: white; font-weight: bold; flex: 1; font-size: 18px; cursor: pointer; }
         .summary-card { background-color: var(--card-bg); margin: 0 20px 10px; padding: 20px; border-radius: 20px; text-align: center; line-height: 1.8; font-size: 18px; }
-        
-        .list-header { text-align: center; padding: 10px; font-weight: bold; color: #555; background: #f9f9f9; }
+        .list-header { text-align: center; padding: 12px; font-weight: bold; color: #555; background: #f9f9f9; display: flex; justify-content: center; align-items: center; gap: 10px; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #eee; }
         .val-rev { color: var(--revenue-green); font-weight: bold; }
         .val-exp { color: var(--expense-red); font-weight: bold; }
 
+        .btn-today { background: var(--primary-yellow); border: none; padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer; }
+
         /* Form */
         .container { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .value-box { background: #f9f9f9; border: 1px solid #ddd; border-radius: 30px; padding: 10px 20px; display: flex; align-items: center; }
+        .value-box { background: #f9f9f9; border: 2px solid var(--primary-yellow); border-radius: 30px; padding: 15px 20px; display: flex; align-items: center; }
         .field { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; }
         .btn-save { background-color: var(--revenue-green); color: white; padding: 18px; border-radius: 40px; border: none; font-weight: bold; font-size: 18px; margin-top: 10px; }
-
-        .cat-item { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 18px; }
+        .cat-item { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 18px; align-items: center; }
     </style>
 </head>
 <body>
 
-    <div id="overlay" class="overlay" onclick="closeNav()"></div>
+    <div id="overlay" class="overlay" onclick="closeAllPopups()"></div>
 
-    <!-- Sidebar -->
+    <div id="modal-delete" class="modal">
+        <h3>Excluir?</h3>
+        <p id="modal-msg">Deseja remover este registro?</p>
+        <div class="modal-btns">
+            <button class="btn-modal" style="background:#eee" onclick="closeAllPopups()">Não</button>
+            <button class="btn-modal" style="background:var(--expense-red); color:white" onclick="executeDelete()">Sim, Excluir</button>
+        </div>
+    </div>
+
+    <div id="modal-add-cat" class="modal">
+        <h3 id="add-cat-title">Nova Categoria</h3>
+        <input type="text" id="new-cat-name" class="modal-field" placeholder="Nome da categoria..." autocomplete="off">
+        <div class="modal-btns">
+            <button class="btn-modal" style="background:#eee" onclick="closeAllPopups()">Cancelar</button>
+            <button class="btn-modal" style="background:var(--primary-yellow); color:black" onclick="confirmAddCat()">Adicionar</button>
+        </div>
+    </div>
+
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">GAT MENU</div>
         <div class="menu-item" onclick="openCatManager('Receita')"><i class="fas fa-plus-circle" style="color:var(--revenue-green)"></i> Categorias Receita</div>
@@ -61,7 +85,6 @@
         <div class="menu-item" onclick="showView('filter-view')"><i class="fas fa-filter"></i> Filtrar Período</div>
     </div>
 
-    <!-- Home View -->
     <div id="home-view" class="view">
         <header><i class="fas fa-bars" onclick="openNav()"></i><span>G A T</span><i></i></header>
         <div class="action-buttons">
@@ -73,35 +96,32 @@
         <div id="daily-list" style="flex: 1; overflow-y: auto;"></div>
     </div>
 
-    <!-- Add/Edit View -->
     <div id="add-view" class="view hidden">
         <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span id="add-title">Lançamento</span><i></i></header>
         <div class="container">
             <div class="value-box">
                 <span style="font-size: 24px; font-weight: bold; color: #999; margin-right: 10px;">R$</span>
-                <input type="tel" id="valor" value="0,00" oninput="formatarMoeda(this)" style="border: none; background: transparent; font-size: 28px; font-weight: bold; width: 100%; text-align: center; outline: none;">
+                <input type="tel" id="valor" placeholder="0,00" oninput="formatarMoeda(this)" style="border: none; background: transparent; font-size: 32px; font-weight: bold; width: 100%; text-align: center; outline: none;">
             </div>
             <select id="categoria-select" class="field"></select>
             <input type="date" id="data" class="field">
             <button class="btn-save" onclick="saveData()">SALVAR</button>
-            <button id="btn-delete" class="field" style="background:#fff; color:var(--expense-red); border:1px solid var(--expense-red); font-weight:bold" onclick="deleteEntry()">EXCLUIR</button>
+            <button id="btn-delete" class="field" style="background:#fff; color:var(--expense-red); border:1px solid var(--expense-red); font-weight:bold" onclick="openDeleteModal('entry')">EXCLUIR</button>
         </div>
     </div>
 
-    <!-- Category Manager View -->
     <div id="cat-manager-view" class="view hidden">
-        <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span id="cat-title">Categorias</span><i class="fas fa-plus" onclick="addCat()"></i></header>
+        <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span id="cat-title">Categorias</span><i class="fas fa-plus" onclick="openAddCatModal()"></i></header>
         <div id="cat-list" style="flex: 1; overflow-y: auto;"></div>
     </div>
 
-    <!-- Filter View -->
     <div id="filter-view" class="view hidden">
         <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span>FILTRAR</span><i></i></header>
         <div class="container">
             <label>Início:</label><input type="date" id="f-ini" class="field">
             <label>Fim:</label><input type="date" id="f-fim" class="field">
             <button class="btn-save" onclick="setFilter()">APLICAR FILTRO</button>
-            <button class="field" style="border:none" onclick="clearFilter()">LIMPAR (HOJE)</button>
+            <button class="field" style="border:none" onclick="clearFilter()">LIMPAR (VOLTAR HOJE)</button>
         </div>
     </div>
 
@@ -110,10 +130,8 @@
         let catsRec = JSON.parse(localStorage.getItem('gat_crec')) || ['Uber', '99Pop', 'Particular'];
         let catsExp = JSON.parse(localStorage.getItem('gat_cexp')) || ['Combustível', 'Manutenção'];
         
-        let curId = null;
-        let curType = 'Receita';
-        let fStart = null, fEnd = null;
-        let managerType = 'Receita';
+        let curId = null, curType = 'Receita', managerType = 'Receita';
+        let fStart = null, fEnd = null, deleteContext = null, pendingCat = null;
 
         function showView(id) {
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
@@ -122,24 +140,34 @@
             closeNav();
         }
 
-        // Home Logic
+        function formatarMoeda(i) {
+            let v = i.value.replace(/\D/g, "");
+            if (v === "") { i.value = ""; return; }
+            v = (parseFloat(v) / 100).toFixed(2).replace(".", ",");
+            v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+            i.value = v;
+        }
+
         function updateHome() {
             const list = document.getElementById('daily-list');
             const resumo = document.getElementById('resumo');
+            const header = document.getElementById('count-header');
             let filtrados = db;
 
             if (fStart && fEnd) {
                 filtrados = db.filter(e => e.data >= fStart && e.data <= fEnd);
-                document.getElementById('count-header').innerText = "Período Selecionado";
+                const d1 = fStart.split('-').reverse().join('/');
+                const d2 = fEnd.split('-').reverse().join('/');
+                header.innerHTML = `<span>${d1} até ${d2}</span> <button class="btn-today" onclick="clearFilter()">Hoje</button>`;
             } else {
                 const hoje = new Date().toISOString().split('T')[0];
                 filtrados = db.filter(e => e.data === hoje);
-                document.getElementById('count-header').innerText = filtrados.length + " Registros Hoje";
+                header.innerHTML = `${filtrados.length} Registros Hoje`;
             }
 
             let r = 0, d = 0;
             list.innerHTML = filtrados.sort((a,b) => b.id - a.id).map(e => {
-                let v = parseFloat(e.val.replace('.','').replace(',','.'));
+                let v = parseFloat(e.val.replace(/\./g, "").replace(",", "."));
                 e.tipo === 'Receita' ? r += v : d += v;
                 return `
                     <div class="list-item" onclick="prepareEdit(${e.id})">
@@ -148,25 +176,19 @@
                     </div>`;
             }).join('');
 
-            resumo.innerHTML = `Receitas: <span class="val-rev">R$ ${r.toFixed(2).replace('.',',')}</span><br>
-                                Despesas: <span class="val-exp">R$ ${d.toFixed(2).replace('.',',')}</span><br>
+            resumo.innerHTML = `Total Receitas: <span class="val-rev">R$ ${r.toFixed(2).replace('.',',')}</span><br>
+                                Total Despesas: <span class="val-exp">R$ ${d.toFixed(2).replace('.',',')}</span><br>
                                 <b>Saldo: R$ ${(r-d).toFixed(2).replace('.',',')}</b>`;
         }
 
-        // Add Logic
         function prepareAdd(type) {
             curId = null; curType = type;
             document.getElementById('add-title').innerText = "Adicionar " + type;
-            document.getElementById('valor').value = "0,00";
+            document.getElementById('valor').value = "";
             document.getElementById('data').value = new Date().toISOString().split('T')[0];
             document.getElementById('btn-delete').classList.add('hidden');
             loadSelect(type);
             showView('add-view');
-        }
-
-        function loadSelect(type, selected = "") {
-            const c = type === 'Receita' ? catsRec : catsExp;
-            document.getElementById('categoria-select').innerHTML = c.map(cat => `<option ${cat===selected?'selected':''}>${cat}</option>`).join('');
         }
 
         function prepareEdit(id) {
@@ -180,16 +202,66 @@
             showView('add-view');
         }
 
+        function loadSelect(type, selected = "") {
+            const c = type === 'Receita' ? catsRec : catsExp;
+            document.getElementById('categoria-select').innerHTML = c.map(cat => `<option ${cat===selected?'selected':''}>${cat}</option>`).join('');
+        }
+
         function saveData() {
-            const entry = { id: curId || Date.now(), tipo: curType, val: document.getElementById('valor').value, cat: document.getElementById('categoria-select').value, data: document.getElementById('data').value };
+            let val = document.getElementById('valor').value;
+            if(!val || val === "0,00") return alert("Insira um valor");
+            const entry = { id: curId || Date.now(), tipo: curType, val: val, cat: document.getElementById('categoria-select').value, data: document.getElementById('data').value };
             if(curId) db = db.map(x => x.id == curId ? entry : x); else db.push(entry);
             localStorage.setItem('gat_db', JSON.stringify(db));
             showView('home-view');
         }
 
-        function deleteEntry() { if(confirm("Excluir registro?")) { db = db.filter(x => x.id != curId); localStorage.setItem('gat_db', JSON.stringify(db)); showView('home-view'); } }
+        function openDeleteModal(context, catName = null) {
+            deleteContext = context; pendingCat = catName;
+            document.getElementById('modal-msg').innerText = context === 'entry' ? "Excluir este registro?" : `Excluir categoria "${catName}"?`;
+            document.getElementById('modal-delete').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
 
-        // Category Logic
+        function openAddCatModal() {
+            document.getElementById('add-cat-title').innerText = "Nova Categoria (" + managerType + ")";
+            document.getElementById('new-cat-name').value = "";
+            document.getElementById('modal-add-cat').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+            setTimeout(() => document.getElementById('new-cat-name').focus(), 300);
+        }
+
+        function confirmAddCat() {
+            let n = document.getElementById('new-cat-name').value.trim();
+            if(n) { 
+                if(managerType === 'Receita') catsRec.push(n); 
+                else catsExp.push(n); 
+                saveCats(); 
+                renderCats(); 
+                closeAllPopups();
+            }
+        }
+
+        function closeAllPopups() {
+            document.getElementById('modal-delete').style.display = 'none';
+            document.getElementById('modal-add-cat').style.display = 'none';
+            document.getElementById('sidebar').style.width = "0";
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        function executeDelete() {
+            if (deleteContext === 'entry') {
+                db = db.filter(x => x.id != curId);
+                localStorage.setItem('gat_db', JSON.stringify(db));
+                showView('home-view');
+            } else {
+                if(managerType === 'Receita') catsRec = catsRec.filter(x => x !== pendingCat); 
+                else catsExp = catsExp.filter(x => x !== pendingCat);
+                saveCats(); renderCats();
+            }
+            closeAllPopups();
+        }
+
         function openCatManager(type) {
             managerType = type;
             document.getElementById('cat-title').innerText = "Categorias " + type;
@@ -199,22 +271,31 @@
 
         function renderCats() {
             const c = managerType === 'Receita' ? catsRec : catsExp;
-            document.getElementById('cat-list').innerHTML = c.map(cat => `<div class="cat-item" onclick="delCat('${cat}')">${cat} <i class="fas fa-trash" style="color:#ddd"></i></div>`).join('');
+            document.getElementById('cat-list').innerHTML = c.map(cat => `
+                <div class="cat-item">
+                    <span>${cat}</span>
+                    <i class="fas fa-trash" style="color:#ccc; padding: 10px;" onclick="openDeleteModal('category', '${cat}')"></i>
+                </div>
+            `).join('');
         }
-
-        function addCat() {
-            let n = prompt("Nova categoria de " + managerType);
-            if(n) { if(managerType === 'Receita') catsRec.push(n); else catsExp.push(n); saveCats(); renderCats(); }
-        }
-
-        function delCat(n) { if(confirm("Remover " + n + "?")) { if(managerType === 'Receita') catsRec = catsRec.filter(x => x !== n); else catsExp = catsExp.filter(x => x !== n); saveCats(); renderCats(); } }
 
         function saveCats() { localStorage.setItem('gat_crec', JSON.stringify(catsRec)); localStorage.setItem('gat_cexp', JSON.stringify(catsExp)); }
+        
+        function setFilter() { 
+            const ini = document.getElementById('f-ini').value;
+            const fim = document.getElementById('f-fim').value;
+            if(!ini || !fim) return alert("Selecione as duas datas");
+            fStart = ini; fEnd = fim; 
+            showView('home-view'); 
+        }
 
-        // Utils
-        function setFilter() { fStart = document.getElementById('f-ini').value; fEnd = document.getElementById('f-fim').value; showView('home-view'); }
-        function clearFilter() { fStart = fEnd = null; showView('home-view'); }
-        function formatarMoeda(i) { let v = i.value.replace(/\D/g, ""); v = (v / 100).toFixed(2).replace(".", ","); i.value = v; }
+        function clearFilter() { 
+            fStart = fEnd = null; 
+            document.getElementById('f-ini').value = "";
+            document.getElementById('f-fim').value = "";
+            showView('home-view'); 
+        }
+
         function openNav() { document.getElementById("sidebar").style.width = "280px"; document.getElementById("overlay").style.display = "block"; }
         function closeNav() { document.getElementById("sidebar").style.width = "0"; document.getElementById("overlay").style.display = "none"; }
 
