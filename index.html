@@ -2,310 +2,223 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GAT - Controle de Táxi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>GAT - Gestão de Corridas</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            --primary: #f1c40f;
-            --success: #27ae60;
-            --danger: #e74c3c;
-            --dark: #2c3e50;
-            --light: #ecf0f1;
+            --primary-yellow: #f1d54b;
+            --sidebar-yellow: #ffde59;
+            --expense-red: #8b2d26;
+            --revenue-green: #2d6a31;
+            --bg-gray: #f4f4f4;
+            --card-bg: #ececec;
+            --overlay-dark: rgba(0, 0, 0, 0.6);
         }
 
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--light);
-            margin: 0; padding: 10px; color: var(--dark);
-            -webkit-tap-highlight-color: transparent;
-        }
+        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: white; overflow-x: hidden; }
+        .hidden { display: none !important; }
+        .view { display: flex; flex-direction: column; min-height: 100vh; }
 
-        /* SIDEBAR */
-        .sidebar {
-            position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
-            background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.3);
-            transition: 0.3s ease; z-index: 9999; padding: 20px; box-sizing: border-box;
-        }
-        .sidebar.active { left: 0; }
-        .sidebar-header { border-bottom: 2px solid var(--primary); margin-bottom: 20px; padding-bottom: 10px; text-align: center; }
+        header { background-color: var(--primary-yellow); display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; font-weight: bold; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .header-btn { font-size: 22px; cursor: pointer; }
+
+        /* Sidebar */
+        .sidebar { height: 100%; width: 0; position: fixed; z-index: 1000; top: 0; left: 0; background-color: var(--sidebar-yellow); overflow-x: hidden; transition: 0.3s; padding-top: 20px; }
+        .sidebar-header { text-align: center; font-weight: bold; margin-bottom: 30px; }
+        .menu-item { display: flex; align-items: center; padding: 15px 20px; text-decoration: none; color: black; font-size: 17px; cursor: pointer; }
+        .menu-item i { margin-right: 15px; font-size: 24px; width: 30px; text-align: center; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay-dark); z-index: 999; }
+
+        /* Home Components */
+        .action-buttons { display: flex; justify-content: space-around; padding: 20px; gap: 15px; }
+        .btn-main { border: none; border-radius: 25px; padding: 18px; color: white; font-weight: bold; flex: 1; font-size: 18px; cursor: pointer; }
+        .summary-card { background-color: var(--card-bg); margin: 0 20px 10px; padding: 20px; border-radius: 20px; text-align: center; line-height: 1.8; font-size: 18px; }
         
-        .menu-item { 
-            padding: 15px; background: #f8f9fa; margin-bottom: 12px; border-radius: 10px; 
-            cursor: pointer; font-weight: bold; display: flex; justify-content: space-between; 
-            align-items: center; border: 1px solid #eee; font-size: 0.9rem;
-        }
-        
-        .overlay-menu { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.6); display: none; z-index: 9998; 
-        }
+        .list-header { text-align: center; padding: 10px; font-weight: bold; color: #555; background: #f9f9f9; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #eee; }
+        .val-rev { color: var(--revenue-green); font-weight: bold; }
+        .val-exp { color: var(--expense-red); font-weight: bold; }
 
-        /* TOP BAR */
-        .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; height: 50px; }
-        .menu-icon { font-size: 1.4rem; cursor: pointer; background: var(--dark); color: white; padding: 8px 15px; border-radius: 10px; border: none; }
-        .top-bar h2 { margin: 0; font-size: 1.6rem; letter-spacing: 2px; font-weight: 900; flex: 1; text-align: center; }
+        /* Form */
+        .container { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .value-box { background: #f9f9f9; border: 1px solid #ddd; border-radius: 30px; padding: 10px 20px; display: flex; align-items: center; }
+        .field { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; }
+        .btn-save { background-color: var(--revenue-green); color: white; padding: 18px; border-radius: 40px; border: none; font-weight: bold; font-size: 18px; margin-top: 10px; }
 
-        /* HEADER RESUMO */
-        .header-resumo { background: var(--dark); color: white; padding: 25px 15px; border-radius: 20px; text-align: center; margin-bottom: 20px; }
-        .header-resumo .total { font-size: 2.4rem; font-weight: bold; color: var(--primary); margin: 5px 0; }
-        .stats { display: flex; justify-content: space-around; border-top: 1px solid #444; padding-top: 15px; margin-top: 15px; font-size: 0.9rem; }
-
-        /* BOTÕES PRINCIPAIS */
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .btn-main { border: none; padding: 18px; border-radius: 12px; font-size: 1rem; font-weight: bold; color: white; cursor: pointer; }
-        .btn-receita { background-color: var(--success); }
-        .btn-despesa { background-color: var(--danger); }
-
-        /* LISTA */
-        .list-container { background: white; border-radius: 20px; padding: 15px; min-height: 200px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .movimentacao { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #f1f1f1; cursor: pointer; }
-
-        /* MODAIS */
-        .modal-overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.8); display: none; align-items: center; 
-            justify-content: center; z-index: 10000; padding: 15px; box-sizing: border-box;
-        }
-        .modal { background: white; width: 100%; max-width: 400px; padding: 25px; border-radius: 25px; box-sizing: border-box; position: relative; max-height: 90vh; overflow-y: auto; }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; font-size: 0.85rem; margin-bottom: 6px; font-weight: bold; color: #555; }
-        .form-group input, .form-group select { width: 100%; padding: 14px; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 1rem; font-family: inherit; }
-
-        /* CONFIRMAÇÃO BONITA */
-        .confirm-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .btn-confirm { padding: 15px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
-        
-        .cat-item-list { list-style: none; padding: 0; margin: 10px 0; border: 1px solid #eee; border-radius: 10px; }
-        .cat-item-list li { padding: 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .cat-item { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 18px; }
     </style>
 </head>
 <body>
 
-    <div class="overlay-menu" id="overlayMenu" onclick="fecharMenu()"></div>
-    
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h2 style="margin:0">GAT PRO</h2>
-            <small>Configurações</small>
+    <div id="overlay" class="overlay" onclick="closeNav()"></div>
+
+    <!-- Sidebar -->
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">GAT MENU</div>
+        <div class="menu-item" onclick="openCatManager('Receita')"><i class="fas fa-plus-circle" style="color:var(--revenue-green)"></i> Categorias Receita</div>
+        <div class="menu-item" onclick="openCatManager('Despesa')"><i class="fas fa-minus-circle" style="color:var(--expense-red)"></i> Categorias Despesa</div>
+        <div class="menu-item" onclick="showView('filter-view')"><i class="fas fa-filter"></i> Filtrar Período</div>
+    </div>
+
+    <!-- Home View -->
+    <div id="home-view" class="view">
+        <header><i class="fas fa-bars" onclick="openNav()"></i><span>G A T</span><i></i></header>
+        <div class="action-buttons">
+            <button class="btn-main" style="background:var(--expense-red)" onclick="prepareAdd('Despesa')">Despesa</button>
+            <button class="btn-main" style="background:var(--revenue-green)" onclick="prepareAdd('Receita')">Receita</button>
         </div>
-        <div class="menu-item" onclick="abrirModalConfig('receita')">💰 Categorias Ganho <span>❯</span></div>
-        <div class="menu-item" onclick="abrirModalConfig('despesa')">⛽ Categorias Gasto <span>❯</span></div>
-        <button onclick="fecharMenu()" style="width:100%; padding:15px; margin-top:20px; border-radius:10px; border:none; background:var(--dark); color:white; font-weight:bold;">VOLTAR</button>
+        <div id="resumo" class="summary-card"></div>
+        <div class="list-header" id="count-header">Registros</div>
+        <div id="daily-list" style="flex: 1; overflow-y: auto;"></div>
     </div>
 
-    <div class="top-bar">
-        <button class="menu-icon" onclick="abrirMenu()">☰</button>
-        <h2>GAT</h2>
-        <div style="width:45px"></div>
-    </div>
-
-    <div class="header-resumo">
-        <div style="opacity: 0.8;">Saldo de Hoje</div>
-        <div class="total" id="saldo-total">R$ 0,00</div>
-        <div class="stats">
-            <div>Ganhos<br><b id="total-receitas" style="color: var(--success)">R$ 0,00</b></div>
-            <div>Gastos<br><b id="total-despesas" style="color: var(--danger)">R$ 0,00</b></div>
-        </div>
-    </div>
-
-    <div class="btn-group">
-        <button class="btn-main btn-receita" onclick="abrirModalCadastro('receita')">+ Receita</button>
-        <button class="btn-main btn-despesa" onclick="abrirModalCadastro('despesa')">- Despesa</button>
-    </div>
-
-    <div class="list-container">
-        <h3 style="margin:0 0 15px 0;">Movimentações de Hoje</h3>
-        <div id="lista-movimentacoes"></div>
-    </div>
-
-    <!-- MODAL CADASTRO COM DATAPICKER -->
-    <div class="modal-overlay" id="modalCadastro">
-        <div class="modal">
-            <h2 id="tituloCadastro" style="margin-top:0">Novo Registro</h2>
-            
-            <div class="form-group">
-                <label>Data</label>
-                <input type="date" id="dataInput">
+    <!-- Add/Edit View -->
+    <div id="add-view" class="view hidden">
+        <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span id="add-title">Lançamento</span><i></i></header>
+        <div class="container">
+            <div class="value-box">
+                <span style="font-size: 24px; font-weight: bold; color: #999; margin-right: 10px;">R$</span>
+                <input type="tel" id="valor" value="0,00" oninput="formatarMoeda(this)" style="border: none; background: transparent; font-size: 28px; font-weight: bold; width: 100%; text-align: center; outline: none;">
             </div>
-
-            <div class="form-group">
-                <label>Valor (R$)</label>
-                <input type="text" id="valorInput" inputmode="decimal" oninput="mascaraMoeda(this)" placeholder="0,00">
-            </div>
-
-            <div class="form-group">
-                <label>Categoria</label>
-                <select id="categoriaSelect"></select>
-            </div>
-
-            <div class="form-group">
-                <label>Observação (Opcional)</label>
-                <input type="text" id="obsInput" placeholder="Ex: Corrida do centro">
-            </div>
-
-            <button class="btn-main" style="background:var(--dark); width:100%;" onclick="salvarMovimento()">SALVAR</button>
-            <button class="btn-main" style="background:none; color: #999; width:100%; margin-top:10px;" onclick="fecharModais()">Cancelar</button>
+            <select id="categoria-select" class="field"></select>
+            <input type="date" id="data" class="field">
+            <button class="btn-save" onclick="saveData()">SALVAR</button>
+            <button id="btn-delete" class="field" style="background:#fff; color:var(--expense-red); border:1px solid var(--expense-red); font-weight:bold" onclick="deleteEntry()">EXCLUIR</button>
         </div>
     </div>
 
-    <div class="modal-overlay" id="modalConfig">
-        <div class="modal">
-            <h2 id="tituloConfig">Categorias</h2>
-            <ul class="cat-item-list" id="listaCategoriasConfig"></ul>
-            <div style="display: flex; gap: 8px;">
-                <input type="text" id="novaCatInput" placeholder="Novo nome...">
-                <button onclick="addCategoria()" style="background:var(--success); color:white; border:none; padding:10px; border-radius:8px;">+</button>
-            </div>
-            <button class="btn-main" style="background:var(--dark); width:100%; margin-top:20px;" onclick="fecharModais()">FECHAR</button>
-        </div>
+    <!-- Category Manager View -->
+    <div id="cat-manager-view" class="view hidden">
+        <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span id="cat-title">Categorias</span><i class="fas fa-plus" onclick="addCat()"></i></header>
+        <div id="cat-list" style="flex: 1; overflow-y: auto;"></div>
     </div>
 
-    <div class="modal-overlay" id="modalConfirmacao">
-        <div class="modal" style="max-width: 300px; text-align: center;">
-            <h3 style="margin-top:0">Remover?</h3>
-            <p style="color:#666">Deseja excluir esta categoria?</p>
-            <div class="confirm-btns">
-                <button class="btn-confirm" style="background:#eee;" onclick="fecharConfirmacao()">NÃO</button>
-                <button class="btn-confirm" style="background:var(--danger); color:white;" id="btnConfirmarExclusao">SIM</button>
-            </div>
+    <!-- Filter View -->
+    <div id="filter-view" class="view hidden">
+        <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span>FILTRAR</span><i></i></header>
+        <div class="container">
+            <label>Início:</label><input type="date" id="f-ini" class="field">
+            <label>Fim:</label><input type="date" id="f-fim" class="field">
+            <button class="btn-save" onclick="setFilter()">APLICAR FILTRO</button>
+            <button class="field" style="border:none" onclick="clearFilter()">LIMPAR (HOJE)</button>
         </div>
     </div>
 
     <script>
-        // Versão do banco de dados alterada para garantir compatibilidade com novos campos
-        let movimentacoes = JSON.parse(localStorage.getItem('gat_mov_v10')) || [];
-        let categorias = JSON.parse(localStorage.getItem('gat_cat_v10')) || {
-            receita: ['Corrida App', 'Corrida Rua', 'Particular'],
-            despesa: ['Combustível', 'Alimentação', 'Manutenção']
-        };
-        let tipoAtual = '';
-        let indexParaRemover = null;
+        let db = JSON.parse(localStorage.getItem('gat_db')) || [];
+        let catsRec = JSON.parse(localStorage.getItem('gat_crec')) || ['Uber', '99Pop', 'Particular'];
+        let catsExp = JSON.parse(localStorage.getItem('gat_cexp')) || ['Combustível', 'Manutenção'];
+        
+        let curId = null;
+        let curType = 'Receita';
+        let fStart = null, fEnd = null;
+        let managerType = 'Receita';
 
-        function abrirMenu() { document.getElementById('sidebar').classList.add('active'); document.getElementById('overlayMenu').style.display = 'block'; }
-        function fecharMenu() { document.getElementById('sidebar').classList.remove('active'); document.getElementById('overlayMenu').style.display = 'none'; }
-        function fecharModais() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display='none'); }
-        function fecharConfirmacao() { document.getElementById('modalConfirmacao').style.display = 'none'; }
-
-        function mascaraMoeda(i) {
-            let v = i.value.replace(/\D/g,'');
-            v = (v/100).toFixed(2) + '';
-            v = v.replace(".", ",");
-            v = v.replace(/(\d)(\d{3}),/g, "$1.$2,");
-            i.value = v;
+        function showView(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+            if(id === 'home-view') updateHome();
+            closeNav();
         }
 
-        function abrirModalCadastro(tipo) {
-            tipoAtual = tipo;
-            document.getElementById('tituloCadastro').innerText = tipo === 'receita' ? 'Nova Receita' : 'Nova Despesa';
-            
-            // Preenche o seletor de categorias
-            const select = document.getElementById('categoriaSelect');
-            select.innerHTML = '';
-            categorias[tipo].forEach(c => select.innerHTML += `<option value="${c}">${c}</option>`);
-            
-            // Reseta campos
-            document.getElementById('valorInput').value = '';
-            document.getElementById('obsInput').value = '';
-            
-            // Define a data de hoje como padrão no input
-            const hoje = new Date().toISOString().split('T')[0];
-            document.getElementById('dataInput').value = hoje;
-            
-            document.getElementById('modalCadastro').style.display = 'flex';
-        }
+        // Home Logic
+        function updateHome() {
+            const list = document.getElementById('daily-list');
+            const resumo = document.getElementById('resumo');
+            let filtrados = db;
 
-        function salvarMovimento() {
-            const valStr = document.getElementById('valorInput').value;
-            const dataSel = document.getElementById('dataInput').value;
-            const valor = parseFloat(valStr.replace(/\./g, '').replace(',', '.'));
-            
-            if(!valor) return alert("Insira um valor!");
-            if(!dataSel) return alert("Selecione uma data!");
-
-            movimentacoes.unshift({
-                id: Date.now(), 
-                tipo: tipoAtual, 
-                valor: valor,
-                categoria: document.getElementById('categoriaSelect').value,
-                obs: document.getElementById('obsInput').value,
-                data: dataSel // Salva a data escolhida pelo usuário
-            });
-
-            localStorage.setItem('gat_mov_v10', JSON.stringify(movimentacoes));
-            fecharModais(); 
-            render();
-        }
-
-        // --- CATEGORIAS ---
-        function abrirModalConfig(tipo) {
-            tipoAtual = tipo; fecharMenu();
-            renderCategorias();
-            document.getElementById('modalConfig').style.display = 'flex';
-        }
-
-        function renderCategorias() {
-            const lista = document.getElementById('listaCategoriasConfig');
-            lista.innerHTML = '';
-            categorias[tipoAtual].forEach((c, idx) => {
-                lista.innerHTML += `<li>${c} <button onclick="solicitarRemocao(${idx})" style="border:none; background:none; color:var(--danger); font-weight:bold;">✕</button></li>`;
-            });
-        }
-
-        function solicitarRemocao(idx) {
-            indexParaRemover = idx;
-            document.getElementById('modalConfirmacao').style.display = 'flex';
-            document.getElementById('btnConfirmarExclusao').onclick = function() {
-                categorias[tipoAtual].splice(indexParaRemover, 1);
-                localStorage.setItem('gat_cat_v10', JSON.stringify(categorias));
-                renderCategorias(); fecharConfirmacao();
-            };
-        }
-
-        function addCategoria() {
-            const val = document.getElementById('novaCatInput').value;
-            if(val) {
-                categorias[tipoAtual].push(val);
-                document.getElementById('novaCatInput').value = '';
-                localStorage.setItem('gat_cat_v10', JSON.stringify(categorias));
-                renderCategorias();
-            }
-        }
-
-        // --- RENDER LISTA PRINCIPAL (Filtrado por data de hoje por padrão) ---
-        function render() {
-            const lista = document.getElementById('lista-movimentacoes');
-            const hoje = new Date().toISOString().split('T')[0];
-            let e = 0, s = 0;
-            
-            lista.innerHTML = '';
-            
-            // Filtra o que aparece na tela inicial (somente o que foi cadastrado como 'hoje')
-            const filtrados = movimentacoes.filter(m => m.data === hoje);
-
-            if(filtrados.length === 0) {
-                lista.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Nenhuma movimentação hoje.</p>';
+            if (fStart && fEnd) {
+                filtrados = db.filter(e => e.data >= fStart && e.data <= fEnd);
+                document.getElementById('count-header').innerText = "Período Selecionado";
+            } else {
+                const hoje = new Date().toISOString().split('T')[0];
+                filtrados = db.filter(e => e.data === hoje);
+                document.getElementById('count-header').innerText = filtrados.length + " Registros Hoje";
             }
 
-            filtrados.forEach(m => {
-                if(m.tipo === 'receita') e += m.valor; else s += m.valor;
-                lista.innerHTML += `
-                    <div class="movimentacao">
-                        <div><b>${m.categoria}</b><br><small style="color:#888">${m.obs || ''}</small></div>
-                        <div style="text-align:right">
-                            <div style="font-weight:bold; color:${m.tipo==='receita'?'var(--success)':'var(--danger)'}">
-                                ${m.tipo==='receita'?'+':'-'} R$ ${m.valor.toLocaleString('pt-BR',{minimumFractionDigits:2})}
-                            </div>
-                        </div>
+            let r = 0, d = 0;
+            list.innerHTML = filtrados.sort((a,b) => b.id - a.id).map(e => {
+                let v = parseFloat(e.val.replace('.','').replace(',','.'));
+                e.tipo === 'Receita' ? r += v : d += v;
+                return `
+                    <div class="list-item" onclick="prepareEdit(${e.id})">
+                        <div><b>${e.cat}</b><br><small>${e.data.split('-').reverse().join('/')}</small></div>
+                        <span class="${e.tipo === 'Receita' ? 'val-rev' : 'val-exp'}">R$ ${e.val}</span>
                     </div>`;
-            });
+            }).join('');
 
-            document.getElementById('total-receitas').innerText = `R$ ${e.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-            document.getElementById('total-despesas').innerText = `R$ ${s.toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
-            document.getElementById('saldo-total').innerText = `R$ ${(e-s).toLocaleString('pt-BR',{minimumFractionDigits:2})}`;
+            resumo.innerHTML = `Receitas: <span class="val-rev">R$ ${r.toFixed(2).replace('.',',')}</span><br>
+                                Despesas: <span class="val-exp">R$ ${d.toFixed(2).replace('.',',')}</span><br>
+                                <b>Saldo: R$ ${(r-d).toFixed(2).replace('.',',')}</b>`;
         }
 
-        render();
+        // Add Logic
+        function prepareAdd(type) {
+            curId = null; curType = type;
+            document.getElementById('add-title').innerText = "Adicionar " + type;
+            document.getElementById('valor').value = "0,00";
+            document.getElementById('data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('btn-delete').classList.add('hidden');
+            loadSelect(type);
+            showView('add-view');
+        }
+
+        function loadSelect(type, selected = "") {
+            const c = type === 'Receita' ? catsRec : catsExp;
+            document.getElementById('categoria-select').innerHTML = c.map(cat => `<option ${cat===selected?'selected':''}>${cat}</option>`).join('');
+        }
+
+        function prepareEdit(id) {
+            const e = db.find(x => x.id == id);
+            curId = id; curType = e.tipo;
+            document.getElementById('add-title').innerText = "Editar " + e.tipo;
+            document.getElementById('valor').value = e.val;
+            document.getElementById('data').value = e.data;
+            loadSelect(e.tipo, e.cat);
+            document.getElementById('btn-delete').classList.remove('hidden');
+            showView('add-view');
+        }
+
+        function saveData() {
+            const entry = { id: curId || Date.now(), tipo: curType, val: document.getElementById('valor').value, cat: document.getElementById('categoria-select').value, data: document.getElementById('data').value };
+            if(curId) db = db.map(x => x.id == curId ? entry : x); else db.push(entry);
+            localStorage.setItem('gat_db', JSON.stringify(db));
+            showView('home-view');
+        }
+
+        function deleteEntry() { if(confirm("Excluir registro?")) { db = db.filter(x => x.id != curId); localStorage.setItem('gat_db', JSON.stringify(db)); showView('home-view'); } }
+
+        // Category Logic
+        function openCatManager(type) {
+            managerType = type;
+            document.getElementById('cat-title').innerText = "Categorias " + type;
+            renderCats();
+            showView('cat-manager-view');
+        }
+
+        function renderCats() {
+            const c = managerType === 'Receita' ? catsRec : catsExp;
+            document.getElementById('cat-list').innerHTML = c.map(cat => `<div class="cat-item" onclick="delCat('${cat}')">${cat} <i class="fas fa-trash" style="color:#ddd"></i></div>`).join('');
+        }
+
+        function addCat() {
+            let n = prompt("Nova categoria de " + managerType);
+            if(n) { if(managerType === 'Receita') catsRec.push(n); else catsExp.push(n); saveCats(); renderCats(); }
+        }
+
+        function delCat(n) { if(confirm("Remover " + n + "?")) { if(managerType === 'Receita') catsRec = catsRec.filter(x => x !== n); else catsExp = catsExp.filter(x => x !== n); saveCats(); renderCats(); } }
+
+        function saveCats() { localStorage.setItem('gat_crec', JSON.stringify(catsRec)); localStorage.setItem('gat_cexp', JSON.stringify(catsExp)); }
+
+        // Utils
+        function setFilter() { fStart = document.getElementById('f-ini').value; fEnd = document.getElementById('f-fim').value; showView('home-view'); }
+        function clearFilter() { fStart = fEnd = null; showView('home-view'); }
+        function formatarMoeda(i) { let v = i.value.replace(/\D/g, ""); v = (v / 100).toFixed(2).replace(".", ","); i.value = v; }
+        function openNav() { document.getElementById("sidebar").style.width = "280px"; document.getElementById("overlay").style.display = "block"; }
+        function closeNav() { document.getElementById("sidebar").style.width = "0"; document.getElementById("overlay").style.display = "none"; }
+
+        updateHome();
     </script>
 </body>
 </html>
