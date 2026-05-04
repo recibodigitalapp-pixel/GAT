@@ -26,7 +26,6 @@
         .hidden { display: none !important; }
         .view { display: flex; flex-direction: column; min-height: 100vh; width: 100%; }
 
-        /* HEADER */
         header { 
             background: var(--primary-yellow); 
             display: flex; justify-content: space-between; align-items: center; 
@@ -35,7 +34,6 @@
         }
         header i { cursor: pointer; font-size: 1.2rem; }
 
-        /* HOME ACTIONS */
         .home-actions { display: flex; justify-content: center; gap: 15px; padding: 20px; }
         .btn-main {
             flex: 1; max-width: 150px; height: 55px; border: none; border-radius: 12px;
@@ -45,14 +43,12 @@
         .btn-rev { background: var(--revenue-green); }
         .btn-exp { background: var(--expense-red); }
 
-        /* CARDS */
         .summary-card { 
             background: white; margin: 0 20px 20px; padding: 20px; border-radius: 15px; 
             text-align: center; border: 1px solid #eee;
         }
         .summary-card b { font-size: 1.3rem; display: block; margin-top: 5px; }
 
-        /* LISTAS */
         .list-container { flex: 1; background: white; border-radius: 25px 25px 0 0; padding: 10px 0; }
         .list-header { text-align: center; padding: 10px; color: #888; font-size: 0.8rem; font-weight: bold; }
         .list-item { 
@@ -60,7 +56,6 @@
             padding: 15px 20px; border-bottom: 1px solid #f5f5f5; cursor: pointer;
         }
 
-        /* MODAIS GERAIS */
         .overlay { display: none; position: fixed; inset: 0; background: var(--overlay-dark); z-index: 999; backdrop-filter: blur(2px); }
         .modal { 
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -77,16 +72,13 @@
             background: var(--revenue-green); color: white;
         }
 
-        /* SIDEBAR */
         .sidebar { height: 100%; width: 0; position: fixed; z-index: 1100; top: 0; left: 0; background: var(--sidebar-yellow); overflow-x: hidden; transition: 0.3s; padding-top: 50px; }
         .menu-item { padding: 15px 25px; display: flex; align-items: center; gap: 15px; font-weight: 600; cursor: pointer; color: #000; }
 
-        /* ESTILOS EXCLUSIVOS DO RECIBO */
         .receipt-content { padding: 20px; }
         .receipt-container { max-width: 450px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin: auto; }
         .receipt-section-title { font-size: 11px; color: #7f8c8d; font-weight: bold; margin: 15px 0 8px; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* NOVO: Empilhamento Data e Valor */
         .receipt-stack { display: flex; flex-direction: column; }
         #r_valor { 
             font-size: 1.3rem; 
@@ -110,18 +102,13 @@
 
     <div id="overlay" class="overlay" onclick="closeAllPopups()"></div>
 
-    <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar">
         <div class="menu-item" onclick="showView('home-view')"><i class="fas fa-home"></i> Início</div>
         <div class="menu-item" onclick="showView('receipt-view')"><i class="fas fa-file-invoice"></i> Recibo</div>
         <div class="menu-item" onclick="showView('scheduled-view')"><i class="fas fa-calendar-alt"></i> Agendamentos</div>
         <div class="menu-item" onclick="showView('payable-view')"><i class="fas fa-file-invoice-dollar"></i> Contas a Pagar</div>
-        <div style="height:1px; background:rgba(0,0,0,0.1); margin:10px 25px"></div>
-        <div class="menu-item" onclick="gerarECopiarBackup()"><i class="fas fa-key"></i> Gerar Código Backup</div>
-        <div class="menu-item" onclick="abrirRestaurar()"><i class="fas fa-sync-alt"></i> Restaurar via Código</div>
     </div>
 
-    <!-- HOME VIEW -->
     <div id="home-view" class="view">
         <header>
             <i class="fas fa-bars" onclick="openNav()"></i>
@@ -139,7 +126,6 @@
         </div>
     </div>
 
-    <!-- VIEW RECIBO -->
     <div id="receipt-view" class="view hidden">
         <header>
             <i class="fas fa-arrow-left" onclick="showView('home-view')"></i>
@@ -149,7 +135,6 @@
         
         <div class="receipt-content">
             <div class="receipt-container">
-                <!-- TELA 0: CADASTRO DO MOTORISTA -->
                 <div id="receipt-step-0">
                     <h2 style="text-align:center">Configurar Motorista</h2>
                     <input type="text" id="reg_motorista" class="modal-field" placeholder="Nome do Motorista">
@@ -161,14 +146,12 @@
                     <button class="btn-save" onclick="salvarCadastroMotorista()">Salvar Cadastro</button>
                 </div>
 
-                <!-- TELA 1: FORMULÁRIO (ATUALIZADA) -->
                 <div id="receipt-step-1" class="hidden">
                     <span class="edit-link" onclick="voltarParaCadastroMotorista()">📝 Alterar Meus Dados</span>
                     <div class="receipt-section-title">Dados da Corrida</div>
                     <input type="text" id="r_origem" class="modal-field" placeholder="Origem">
                     <input type="text" id="r_destino" class="modal-field" placeholder="Destino">
                     
-                    <!-- NOVO: DATA E VALOR LOGO ABAIXO -->
                     <div class="receipt-stack">
                         <input type="datetime-local" id="r_data" class="modal-field">
                         <input type="tel" id="r_valor" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)" inputmode="numeric">
@@ -180,7 +163,6 @@
                     <button class="btn-receipt-primary" onclick="gerarReciboFinal()">GERAR RECIBO</button>
                 </div>
 
-                <!-- TELA 2: VISUALIZAÇÃO -->
                 <div id="receipt-step-2" class="hidden">
                     <div class="recibo-preview" id="print-area">
                         <div class="recibo-header">RECIBO DE TÁXI / APP</div>
@@ -191,7 +173,7 @@
                         <div class="info-row"><span class="info-label">Origem</span><span id="p_origem"></span></div>
                         <div class="info-row"><span class="info-label">Destino</span><span id="p_destino"></span></div>
                         <div class="info-row"><span class="info-label">Data e Hora</span><span id="p_data"></span></div>
-                        <div class="valor-box" onclick="novoRecibo()">
+                        <div class="valor-box" onclick="showView('receipt-view')">
                             <span class="info-label">Valor Total</span>
                             <span class="valor-num" id="p_valor"></span>
                         </div>
@@ -202,19 +184,9 @@
         </div>
     </div>
 
-    <!-- OUTRAS VIEWS (CONTAS E AGENDAMENTOS) MANTIDAS PARA FUNCIONAMENTO -->
-    <div id="payable-view" class="view hidden">
-        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>CONTAS A PAGAR</span><i class="fas fa-plus" onclick="openPayableModal()"></i></header>
-        <div id="resumo-contas" class="summary-card" style="margin-top:20px; border-bottom: 4px solid var(--payable-orange);"></div>
-        <div class="list-container"><div id="list-contas"></div></div>
-    </div>
+    <div id="payable-view" class="view hidden"><header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>CONTAS</span></header></div>
+    <div id="scheduled-view" class="view hidden"><header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>AGENDAMENTOS</span></header></div>
 
-    <div id="scheduled-view" class="view hidden">
-        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>AGENDAMENTOS</span></header>
-        <div id="list-agendamentos" style="padding:15px"></div>
-    </div>
-
-    <!-- MODAL LANÇAMENTO -->
     <div id="modal-entry" class="modal">
         <h3 id="entry-title" style="margin:0 0 15px">Lançamento</h3>
         <input type="tel" id="v-val" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)" style="font-size:1.5rem; text-align:center; font-weight:bold">
@@ -244,7 +216,6 @@
             closeAllPopups();
         }
 
-        // FORMATADOR DE MOEDA (REAL)
         function formatMoeda(i) {
             let v = i.value.replace(/\D/g, "");
             v = (parseFloat(v) / 100).toFixed(2).replace(".", ",");
@@ -252,12 +223,12 @@
             i.value = "R$ " + v;
         }
 
-        // LÓGICA DO RECIBO
         function checkDriverStatus() {
             if(driverData) {
                 document.getElementById('receipt-step-0').classList.add('hidden');
                 document.getElementById('receipt-step-1').classList.remove('hidden');
                 document.getElementById('receipt-step-2').classList.add('hidden');
+                // Mantém a data atualizada sempre que entrar na tela de preenchimento
                 const agora = new Date();
                 agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
                 document.getElementById('r_data').value = agora.toISOString().slice(0,16);
@@ -270,10 +241,8 @@
         function salvarCadastroMotorista() {
             const motorista = document.getElementById('reg_motorista').value;
             const tel = document.getElementById('reg_tel').value;
-            const placa = document.getElementById('reg_placa').value;
-            const doc = document.getElementById('reg_doc').value;
             if(!motorista || !tel) return alert("Nome e Telefone são obrigatórios!");
-            driverData = { motorista, tel, placa, doc };
+            driverData = { motorista, tel, placa: document.getElementById('reg_placa').value, doc: document.getElementById('reg_doc').value };
             localStorage.setItem('gat_driver', JSON.stringify(driverData));
             checkDriverStatus();
         }
@@ -283,10 +252,12 @@
             const destino = document.getElementById('r_destino').value;
             const valor = document.getElementById('r_valor').value;
             const cliente = document.getElementById('r_cliente').value;
+            const telCliente = document.getElementById('r_tel_cliente').value;
             const dataRaw = document.getElementById('r_data').value;
 
-            if(!origem || !destino || !valor || valor === "R$ 0,00") return alert("Preencha os dados!");
+            if(!origem || !destino || !valor || valor === "R$ 0,00") return alert("Preencha os dados da corrida!");
 
+            // Alimenta o Preview do Recibo
             document.getElementById('p_motorista').innerText = driverData.motorista + " (" + driverData.tel + ")";
             document.getElementById('p_doc_placa').innerText = "Doc: " + (driverData.doc || "---") + " | Placa: " + (driverData.placa || "---");
             document.getElementById('p_cliente').innerText = cliente || "Não informado";
@@ -297,6 +268,20 @@
             const d = new Date(dataRaw);
             document.getElementById('p_data').innerText = d.toLocaleDateString('pt-BR') + " " + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
 
+            // --- ALTERAÇÃO SOLICITADA: LIMPEZA DOS INPUTS ---
+            document.getElementById('r_origem').value = "";
+            document.getElementById('r_destino').value = "";
+            document.getElementById('r_valor').value = "";
+            document.getElementById('r_cliente').value = "";
+            document.getElementById('r_tel_cliente').value = "";
+            
+            // Reseta a data para o momento atual para o próximo recibo
+            const agora = new Date();
+            agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+            document.getElementById('r_data').value = agora.toISOString().slice(0,16);
+            // ------------------------------------------------
+
+            // Troca para a tela de visualização
             document.getElementById('receipt-step-1').classList.add('hidden');
             document.getElementById('receipt-step-2').classList.remove('hidden');
         }
@@ -306,14 +291,6 @@
             document.getElementById('receipt-step-0').classList.remove('hidden');
         }
 
-        function novoRecibo() {
-            document.getElementById('r_origem').value = "";
-            document.getElementById('r_destino').value = "";
-            document.getElementById('r_valor').value = "";
-            checkDriverStatus();
-        }
-
-        // LÓGICA HOME E BACKUP
         function updateHome() {
             const hoje = new Date().toISOString().split('T')[0];
             const items = db.filter(e => e.data === hoje);
