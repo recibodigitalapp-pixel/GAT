@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>GAT - Gestão de Corridas</title>
+    <title>GAT - Gestão Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -11,332 +11,394 @@
             --sidebar-yellow: #ffde59;
             --expense-red: #8b2d26;
             --revenue-green: #2d6a31;
-            --bg-gray: #f4f4f4;
-            --card-bg: #ececec;
+            --bg-gray: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-dark: #333;
+            --scheduled-blue: #2c5282;
             --overlay-dark: rgba(0, 0, 0, 0.6);
         }
 
-        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: white; overflow-x: hidden; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg-gray); color: var(--text-dark); }
         .hidden { display: none !important; }
-        .view { display: flex; flex-direction: column; min-height: 100vh; }
+        .view { display: flex; flex-direction: column; min-height: 100vh; width: 100%; }
 
-        header { background-color: var(--primary-yellow); display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; font-weight: bold; font-size: 18px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* Sidebar */
-        .sidebar { height: 100%; width: 0; position: fixed; z-index: 1000; top: 0; left: 0; background-color: var(--sidebar-yellow); overflow-x: hidden; transition: 0.3s; padding-top: 20px; }
-        .sidebar-header { text-align: center; font-weight: bold; margin-bottom: 30px; }
-        .menu-item { display: flex; align-items: center; padding: 15px 20px; text-decoration: none; color: black; font-size: 17px; cursor: pointer; }
-        .menu-item i { margin-right: 15px; font-size: 24px; width: 30px; text-align: center; }
-        .menu-sep { height: 1px; background: rgba(0,0,0,0.1); margin: 10px 20px; }
-        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--overlay-dark); z-index: 999; }
+        /* HEADER */
+        header { 
+            background: var(--primary-yellow); 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 20px; font-weight: 800; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: sticky; top: 0; z-index: 100;
+        }
+        header i { cursor: pointer; font-size: 1.2rem; }
 
-        /* Modais */
-        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 20px; z-index: 1001; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .modal h3 { margin-top: 0; color: #333; margin-bottom: 10px; }
-        .modal-btns { display: flex; gap: 10px; margin-top: 20px; }
-        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
-        .modal-field { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-size: 16px; box-sizing: border-box; outline: none; text-align: center; }
-        .modal-field:focus { border-color: var(--primary-yellow); }
+        /* HOME ACTIONS */
+        .home-actions { display: flex; justify-content: center; gap: 15px; padding: 20px; }
+        .btn-main {
+            flex: 1; max-width: 150px; height: 55px; border: none; border-radius: 12px;
+            color: white; font-weight: bold; display: flex; align-items: center; 
+            justify-content: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-rev { background: var(--revenue-green); }
+        .btn-exp { background: var(--expense-red); }
 
-        /* Home */
-        .action-buttons { display: flex; justify-content: space-around; padding: 20px; gap: 15px; }
-        .btn-main { border: none; border-radius: 25px; padding: 18px; color: white; font-weight: bold; flex: 1; font-size: 18px; cursor: pointer; }
-        .summary-card { background-color: var(--card-bg); margin: 0 20px 10px; padding: 20px; border-radius: 20px; text-align: center; line-height: 1.8; font-size: 18px; }
-        .list-header { text-align: center; padding: 12px; font-weight: bold; color: #555; background: #f9f9f9; display: flex; justify-content: center; align-items: center; gap: 10px; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; border-bottom: 1px solid #eee; }
-        .val-rev { color: var(--revenue-green); font-weight: bold; }
-        .val-exp { color: var(--expense-red); font-weight: bold; }
+        /* CARDS */
+        .summary-card { 
+            background: white; margin: 0 20px 20px; padding: 20px; border-radius: 15px; 
+            text-align: center; border: 1px solid #eee;
+        }
+        .summary-card b { font-size: 1.3rem; display: block; margin-top: 5px; }
 
-        .btn-today { background: var(--primary-yellow); border: none; padding: 5px 12px; border-radius: 15px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        /* LISTAS */
+        .list-container { flex: 1; background: white; border-radius: 25px 25px 0 0; padding: 10px 0; }
+        .list-header { text-align: center; padding: 10px; color: #888; font-size: 0.8rem; font-weight: bold; }
+        .list-item { 
+            display: flex; justify-content: space-between; align-items: center; 
+            padding: 15px 20px; border-bottom: 1px solid #f5f5f5; cursor: pointer;
+        }
 
-        /* Form */
-        .container { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .value-box { background: #f9f9f9; border: 2px solid var(--primary-yellow); border-radius: 30px; padding: 15px 20px; display: flex; align-items: center; }
-        .field { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; outline: none; }
-        .btn-save { background-color: var(--revenue-green); color: white; padding: 18px; border-radius: 40px; border: none; font-weight: bold; font-size: 18px; margin-top: 10px; }
-        .cat-item { padding: 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-size: 18px; align-items: center; }
+        /* MODAIS E INPUTS */
+        .overlay { display: none; position: fixed; inset: 0; background: var(--overlay-dark); z-index: 999; backdrop-filter: blur(2px); }
+        .modal { 
+            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 20px; 
+            z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .modal-field { 
+            width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; 
+            margin-bottom: 12px; font-size: 1rem; outline: none;
+        }
+        .btn-save { 
+            width: 100%; padding: 15px; border: none; border-radius: 10px; 
+            font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 5px;
+            background: var(--revenue-green); color: white;
+        }
+
+        /* SIDEBAR */
+        .sidebar { height: 100%; width: 0; position: fixed; z-index: 1100; top: 0; left: 0; background: var(--sidebar-yellow); overflow-x: hidden; transition: 0.3s; padding-top: 50px; }
+        .menu-item { padding: 15px 25px; display: flex; align-items: center; gap: 15px; font-weight: 600; cursor: pointer; }
+
+        /* FILTER VIEW SPECIFIC */
+        .filter-controls { padding: 20px; background: white; margin-bottom: 10px; }
+        .date-group { display: flex; gap: 10px; margin-bottom: 15px; }
+        .date-group div { flex: 1; }
+        .date-group label { font-size: 0.8rem; font-weight: bold; color: #555; display: block; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
     <div id="overlay" class="overlay" onclick="closeAllPopups()"></div>
 
-    <div id="modal-delete" class="modal">
-        <h3>Excluir?</h3>
-        <p id="modal-msg">Deseja remover este registro?</p>
-        <div class="modal-btns">
-            <button class="btn-modal" style="background:#eee" onclick="closeAllPopups()">Não</button>
-            <button class="btn-modal" style="background:var(--expense-red); color:white" onclick="executeDelete()">Sim, Excluir</button>
-        </div>
-    </div>
-
-    <div id="modal-add-cat" class="modal">
-        <h3 id="add-cat-title">Nova Categoria</h3>
-        <input type="text" id="new-cat-name" class="modal-field" placeholder="Nome da categoria..." autocomplete="off">
-        <div class="modal-btns">
-            <button class="btn-modal" style="background:#eee" onclick="closeAllPopups()">Cancelar</button>
-            <button class="btn-modal" style="background:var(--primary-yellow); color:black" onclick="confirmAddCat()">Adicionar</button>
-        </div>
-    </div>
-
+    <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar">
-        <div class="sidebar-header">GAT MENU</div>
-        <div class="menu-item" onclick="openCatManager('Receita')"><i class="fas fa-plus-circle" style="color:var(--revenue-green)"></i> Categorias Receita</div>
-        <div class="menu-item" onclick="openCatManager('Despesa')"><i class="fas fa-minus-circle" style="color:var(--expense-red)"></i> Categorias Despesa</div>
-        <div class="menu-item" onclick="showView('filter-view')"><i class="fas fa-filter"></i> Filtrar Período</div>
-        <div class="menu-sep"></div>
-        <div class="menu-item" onclick="exportarBackup()"><i class="fas fa-copy"></i> Copiar Backup</div>
-        <div class="menu-item" onclick="importarBackup()"><i class="fas fa-paste"></i> Restaurar Backup</div>
+        <div class="menu-item" onclick="showView('home-view')"><i class="fas fa-home"></i> Início</div>
+        <div class="menu-item" onclick="showView('scheduled-view')"><i class="fas fa-calendar-alt"></i> Agendamentos</div>
+        <div style="height:1px; background:#ddd; margin:10px 25px"></div>
+        <div class="menu-item" onclick="exportarBackup()"><i class="fas fa-download"></i> Exportar Backup</div>
+        <div class="menu-item" onclick="importarBackup()"><i class="fas fa-upload"></i> Importar Backup</div>
     </div>
 
+    <!-- HOME VIEW -->
     <div id="home-view" class="view">
-        <header><i class="fas fa-bars" onclick="openNav()"></i><span>G A T</span><i></i></header>
-        <div class="action-buttons">
-            <button class="btn-main" style="background:var(--expense-red)" onclick="prepareAdd('Despesa')">Despesa</button>
-            <button class="btn-main" style="background:var(--revenue-green)" onclick="prepareAdd('Receita')">Receita</button>
-        </div>
-        <div id="resumo" class="summary-card"></div>
-        <div class="list-header" id="count-header">Registros</div>
-        <div id="daily-list" style="flex: 1; overflow-y: auto;"></div>
-    </div>
+        <header>
+            <i class="fas fa-bars" onclick="openNav()"></i>
+            <span>GAT GESTÃO</span>
+            <i class="fas fa-filter" onclick="showView('filter-view')" title="Filtrar Corridas"></i>
+        </header>
 
-    <div id="add-view" class="view hidden">
-        <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span id="add-title">Lançamento</span><i></i></header>
-        <div class="container">
-            <div class="value-box">
-                <span style="font-size: 24px; font-weight: bold; color: #999; margin-right: 10px;">R$</span>
-                <input type="tel" id="valor" placeholder="0,00" oninput="formatarMoeda(this)" style="border: none; background: transparent; font-size: 32px; font-weight: bold; width: 100%; text-align: center; outline: none;">
-            </div>
-            <select id="categoria-select" class="field"></select>
-            <input type="date" id="data" class="field">
-            <button class="btn-save" onclick="saveData()">SALVAR</button>
-            <button id="btn-delete" class="field" style="background:#fff; color:var(--expense-red); border:1px solid var(--expense-red); font-weight:bold" onclick="openDeleteModal('entry')">EXCLUIR</button>
+        <div class="home-actions">
+            <button class="btn-main btn-exp" onclick="prepareAdd('Despesa')"><i class="fas fa-minus"></i> DESPESA</button>
+            <button class="btn-main btn-rev" onclick="prepareAdd('Receita')"><i class="fas fa-plus"></i> RECEITA</button>
+        </div>
+
+        <div id="resumo-home" class="summary-card"></div>
+
+        <div class="list-container">
+            <div class="list-header">LANÇAMENTOS DE HOJE</div>
+            <div id="list-hoje"></div>
         </div>
     </div>
 
-    <div id="cat-manager-view" class="view hidden">
-        <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span id="cat-title">Categorias</span><i class="fas fa-plus" onclick="openAddCatModal()"></i></header>
-        <div id="cat-list" style="flex: 1; overflow-y: auto;"></div>
-    </div>
-
+    <!-- FILTER VIEW (TELA DE FILTRO) -->
     <div id="filter-view" class="view hidden">
-        <header><i class="fas fa-chevron-left" onclick="showView('home-view')"></i><span>FILTRAR</span><i></i></header>
-        <div class="container">
-            <label>Início:</label><input type="date" id="f-ini" class="field">
-            <label>Fim:</label><input type="date" id="f-fim" class="field">
-            <button class="btn-save" onclick="setFilter()">APLICAR FILTRO</button>
-            <button class="field" style="border:none" onclick="clearFilter()">LIMPAR (VOLTAR HOJE)</button>
+        <header>
+            <i class="fas fa-arrow-left" onclick="showView('home-view')"></i>
+            <span>FILTRAR CORRIDAS</span>
+            <div style="width:24px"></div>
+        </header>
+
+        <div class="filter-controls">
+            <div class="date-group">
+                <div>
+                    <label>Início</label>
+                    <input type="date" id="f-start" class="modal-field">
+                </div>
+                <div>
+                    <label>Fim</label>
+                    <input type="date" id="f-end" class="modal-field">
+                </div>
+            </div>
+            <button class="btn-save" onclick="applyFilter()">BUSCAR LANÇAMENTOS</button>
         </div>
+
+        <div id="resumo-filtro" class="summary-card hidden"></div>
+
+        <div class="list-container">
+            <div class="list-header" id="filter-status">Selecione as datas</div>
+            <div id="list-filtrada"></div>
+        </div>
+    </div>
+
+    <!-- SCHEDULED VIEW -->
+    <div id="scheduled-view" class="view hidden">
+        <header>
+            <i class="fas fa-arrow-left" onclick="showView('home-view')"></i>
+            <span>AGENDAMENTOS</span>
+            <i class="fas fa-plus" onclick="openSchedModal()"></i>
+        </header>
+        <div id="list-agendamentos" style="padding:15px"></div>
+    </div>
+
+    <!-- MODAL LANÇAMENTO (EDITAR/EXCLUIR) -->
+    <div id="modal-entry" class="modal">
+        <h3 id="entry-title" style="margin-top:0">Novo Lançamento</h3>
+        <input type="tel" id="v-val" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)" style="font-size:1.5rem; text-align:center; font-weight:bold">
+        <select id="v-cat" class="modal-field"></select>
+        <input type="date" id="v-data" class="modal-field">
+        
+        <button class="btn-save" onclick="saveEntry()">SALVAR</button>
+        <button id="btn-del-entry" class="btn-save hidden" style="background:var(--expense-red)" onclick="deleteEntry()">EXCLUIR</button>
+        <button class="btn-save" style="background:#eee; color:#333" onclick="closeAllPopups()">CANCELAR</button>
+    </div>
+
+    <!-- MODAL AGENDAMENTO -->
+    <div id="modal-sched" class="modal">
+        <h3 style="margin-top:0">Agendamento</h3>
+        <input type="text" id="s-nome" class="modal-field" placeholder="Passageiro">
+        <input type="tel" id="s-tel" class="modal-field" placeholder="Telefone" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+        <input type="text" id="s-ori" class="modal-field" placeholder="Origem">
+        <input type="text" id="s-des" class="modal-field" placeholder="Destino">
+        <div style="display:flex; gap:10px">
+            <input type="date" id="s-data" class="modal-field">
+            <input type="time" id="s-hora" class="modal-field">
+        </div>
+        <button class="btn-save" onclick="saveSched()">SALVAR AGENDAMENTO</button>
+        <button id="btn-del-sched" class="btn-save hidden" style="background:var(--expense-red)" onclick="deleteSched()">EXCLUIR</button>
+        <button class="btn-save" style="background:#eee; color:#333" onclick="closeAllPopups()">FECHAR</button>
     </div>
 
     <script>
         let db = JSON.parse(localStorage.getItem('gat_db')) || [];
-        let catsRec = JSON.parse(localStorage.getItem('gat_crec')) || ['Uber', '99Pop', 'Particular'];
-        let catsExp = JSON.parse(localStorage.getItem('gat_cexp')) || ['Combustível', 'Manutenção'];
+        let scheds = JSON.parse(localStorage.getItem('gat_sched')) || [];
+        const catsRec = ['Uber', '99Pop', 'Particular', 'Outros'];
+        const catsExp = ['Combustível', 'Manutenção', 'Alimentação', 'Outros'];
         
-        let curId = null, curType = 'Receita', managerType = 'Receita';
-        let fStart = null, fEnd = null, deleteContext = null, pendingCat = null;
+        let curId = null;
+        let curType = 'Receita';
 
-        function exportarBackup() {
-            const dados = JSON.stringify({ db, catsRec, catsExp });
-            const areaTexto = document.createElement("textarea");
-            areaTexto.value = dados;
-            document.body.appendChild(areaTexto);
-            areaTexto.select();
-            try {
-                document.execCommand("copy");
-                alert("Backup copiado para a área de transferência!");
-            } catch (err) {
-                prompt("Copie o código de backup abaixo:", dados);
-            }
-            document.body.removeChild(areaTexto);
-            closeNav();
+        // Navegação
+        function openNav() { document.getElementById("sidebar").style.width = "280px"; document.getElementById("overlay").style.display = "block"; }
+        function closeAllPopups() {
+            document.getElementById("sidebar").style.width = "0";
+            document.getElementById("overlay").style.display = "none";
+            document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         }
 
-        function importarBackup() {
-            const codigo = prompt("Cole o código de backup aqui:");
-            if (!codigo) return;
-            try {
-                const dados = JSON.parse(codigo);
-                if (confirm("Isso substituirá todos os dados atuais. Confirmar?")) {
-                    db = dados.db || [];
-                    catsRec = dados.catsRec || [];
-                    catsExp = dados.catsExp || [];
-                    localStorage.setItem('gat_db', JSON.stringify(db));
-                    localStorage.setItem('gat_crec', JSON.stringify(catsRec));
-                    localStorage.setItem('gat_cexp', JSON.stringify(catsExp));
-                    window.location.reload();
-                }
-            } catch (e) {
-                alert("Código de backup inválido!");
-            }
-        }
-
-        function showView(id) {
+        function showView(viewId) {
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
-            document.getElementById(id).classList.remove('hidden');
-            if(id === 'home-view') updateHome();
-            closeNav();
+            document.getElementById(viewId).classList.remove('hidden');
+            if(viewId === 'home-view') updateHome();
+            if(viewId === 'scheduled-view') updateSchedList();
+            closeAllPopups();
         }
 
-        function formatarMoeda(i) {
+        // Finanças e Formatação
+        function formatMoeda(i) {
             let v = i.value.replace(/\D/g, "");
-            if (v === "") { i.value = ""; return; }
             v = (parseFloat(v) / 100).toFixed(2).replace(".", ",");
             v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
-            i.value = v;
+            i.value = "R$ " + v;
         }
 
         function updateHome() {
-            const list = document.getElementById('daily-list');
-            const resumo = document.getElementById('resumo');
-            const header = document.getElementById('count-header');
-            let filtrados = db;
+            const hoje = new Date().toISOString().split('T')[0];
+            renderList(db.filter(e => e.data === hoje), 'list-hoje', 'resumo-home');
+        }
 
-            if (fStart && fEnd) {
-                filtrados = db.filter(e => e.data >= fStart && e.data <= fEnd);
-                const d1 = fStart.split('-').reverse().join('/');
-                const d2 = fEnd.split('-').reverse().join('/');
-                header.innerHTML = `<span>${d1} até ${d2}</span> <button class="btn-today" onclick="clearFilter()">Hoje</button>`;
-            } else {
-                const hoje = new Date().toISOString().split('T')[0];
-                filtrados = db.filter(e => e.data === hoje);
-                header.innerHTML = `${filtrados.length} Registros Hoje`;
-            }
+        function applyFilter() {
+            const start = document.getElementById('f-start').value;
+            const end = document.getElementById('f-end').value;
+            if(!start || !end) return alert("Escolha as duas datas");
 
+            const filtrados = db.filter(e => e.data >= start && e.data <= end);
+            document.getElementById('filter-status').innerText = filtrados.length + " lançamentos encontrados";
+            document.getElementById('resumo-filtro').classList.remove('hidden');
+            renderList(filtrados, 'list-filtrada', 'resumo-filtro');
+        }
+
+        function renderList(items, containerId, summaryId) {
+            const container = document.getElementById(containerId);
+            const summary = document.getElementById(summaryId);
             let r = 0, d = 0;
-            list.innerHTML = filtrados.sort((a,b) => b.id - a.id).map(e => {
-                let v = parseFloat(e.val.replace(/\./g, "").replace(",", "."));
+
+            container.innerHTML = items.sort((a,b) => b.id - a.id).map(e => {
+                let v = parseFloat(e.val.replace(/[R$\s.]/g, "").replace(",", "."));
                 e.tipo === 'Receita' ? r += v : d += v;
                 return `
                     <div class="list-item" onclick="prepareEdit(${e.id})">
-                        <div><b>${e.cat}</b><br><small>${e.data.split('-').reverse().join('/')}</small></div>
-                        <span class="${e.tipo === 'Receita' ? 'val-rev' : 'val-exp'}">R$ ${e.val}</span>
+                        <div>
+                            <strong>${e.cat}</strong><br>
+                            <small>${e.data.split('-').reverse().join('/')}</small>
+                        </div>
+                        <b style="color:${e.tipo==='Receita'?'var(--revenue-green)':'var(--expense-red)'}">${e.val}</b>
                     </div>`;
             }).join('');
 
-            resumo.innerHTML = `Total Receitas: <span class="val-rev">R$ ${r.toFixed(2).replace('.',',')}</span><br>
-                                Total Despesas: <span class="val-exp">R$ ${d.toFixed(2).replace('.',',')}</span><br>
-                                <b>Saldo: R$ ${(r-d).toFixed(2).replace('.',',')}</b>`;
+            summary.innerHTML = `
+                <div style="display:flex; justify-content:space-around; font-size:0.9rem">
+                    <span style="color:var(--revenue-green)">+ R$ ${r.toFixed(2)}</span>
+                    <span style="color:var(--expense-red)">- R$ ${d.toFixed(2)}</span>
+                </div>
+                <b>Saldo: R$ ${(r-d).toFixed(2)}</b>
+            `;
         }
 
+        // CRUD Lançamentos
         function prepareAdd(type) {
             curId = null; curType = type;
-            document.getElementById('add-title').innerText = "Adicionar " + type;
-            document.getElementById('valor').value = "";
-            document.getElementById('data').value = new Date().toISOString().split('T')[0];
-            document.getElementById('btn-delete').classList.add('hidden');
-            loadSelect(type);
-            showView('add-view');
+            document.getElementById('entry-title').innerText = "Nova " + type;
+            document.getElementById('v-val').value = "";
+            document.getElementById('v-data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('btn-del-entry').classList.add('hidden');
+            document.getElementById('v-cat').innerHTML = (type === 'Receita' ? catsRec : catsExp).map(c => `<option>${c}</option>`).join('');
+            document.getElementById('modal-entry').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
         }
 
         function prepareEdit(id) {
             const e = db.find(x => x.id == id);
             curId = id; curType = e.tipo;
-            document.getElementById('add-title').innerText = "Editar " + e.tipo;
-            document.getElementById('valor').value = e.val;
-            document.getElementById('data').value = e.data;
-            loadSelect(e.tipo, e.cat);
-            document.getElementById('btn-delete').classList.remove('hidden');
-            showView('add-view');
+            document.getElementById('entry-title').innerText = "Editar " + e.tipo;
+            document.getElementById('v-val').value = e.val;
+            document.getElementById('v-data').value = e.data;
+            document.getElementById('btn-del-entry').classList.remove('hidden');
+            document.getElementById('v-cat').innerHTML = (e.tipo === 'Receita' ? catsRec : catsExp).map(c => `<option ${c===e.cat?'selected':''}>${c}</option>`).join('');
+            document.getElementById('modal-entry').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
         }
 
-        function loadSelect(type, selected = "") {
-            const c = type === 'Receita' ? catsRec : catsExp;
-            document.getElementById('categoria-select').innerHTML = c.map(cat => `<option ${cat===selected?'selected':''}>${cat}</option>`).join('');
-        }
-
-        function saveData() {
-            let val = document.getElementById('valor').value;
-            if(!val || val === "0,00") return alert("Insira um valor");
-            const entry = { id: curId || Date.now(), tipo: curType, val: val, cat: document.getElementById('categoria-select').value, data: document.getElementById('data').value };
+        function saveEntry() {
+            const val = document.getElementById('v-val').value;
+            if(!val || val === "R$ 0,00") return alert("Insira um valor");
+            const entry = {
+                id: curId || Date.now(),
+                tipo: curType,
+                val: val,
+                cat: document.getElementById('v-cat').value,
+                data: document.getElementById('v-data').value
+            };
             if(curId) db = db.map(x => x.id == curId ? entry : x); else db.push(entry);
             localStorage.setItem('gat_db', JSON.stringify(db));
-            showView('home-view');
+            closeAllPopups();
+            updateHome();
+            if(!document.getElementById('filter-view').classList.contains('hidden')) applyFilter();
         }
 
-        function openDeleteModal(context, catName = null) {
-            deleteContext = context; pendingCat = catName;
-            document.getElementById('modal-msg').innerText = context === 'entry' ? "Excluir este registro?" : `Excluir categoria "${catName}"?`;
-            document.getElementById('modal-delete').style.display = 'block';
-            document.getElementById('overlay').style.display = 'block';
-        }
-
-        function openAddCatModal() {
-            document.getElementById('add-cat-title').innerText = "Nova Categoria (" + managerType + ")";
-            document.getElementById('new-cat-name').value = "";
-            document.getElementById('modal-add-cat').style.display = 'block';
-            document.getElementById('overlay').style.display = 'block';
-            setTimeout(() => document.getElementById('new-cat-name').focus(), 300);
-        }
-
-        function confirmAddCat() {
-            let n = document.getElementById('new-cat-name').value.trim();
-            if(n) { 
-                if(managerType === 'Receita') catsRec.push(n); 
-                else catsExp.push(n); 
-                saveCats(); 
-                renderCats(); 
-                closeAllPopups();
-            }
-        }
-
-        function closeAllPopups() {
-            document.getElementById('modal-delete').style.display = 'none';
-            document.getElementById('modal-add-cat').style.display = 'none';
-            document.getElementById('sidebar').style.width = "0";
-            document.getElementById('overlay').style.display = 'none';
-        }
-
-        function executeDelete() {
-            if (deleteContext === 'entry') {
+        function deleteEntry() {
+            if(confirm("Deseja excluir este lançamento?")) {
                 db = db.filter(x => x.id != curId);
                 localStorage.setItem('gat_db', JSON.stringify(db));
-                showView('home-view');
-            } else {
-                if(managerType === 'Receita') catsRec = catsRec.filter(x => x !== pendingCat); 
-                else catsExp = catsExp.filter(x => x !== pendingCat);
-                saveCats(); renderCats();
+                closeAllPopups();
+                updateHome();
+                if(!document.getElementById('filter-view').classList.contains('hidden')) applyFilter();
             }
+        }
+
+        // Agendamentos
+        function openSchedModal(id = null) {
+            curId = id;
+            if(id) {
+                const s = scheds.find(x => x.id == id);
+                document.getElementById('s-nome').value = s.nome;
+                document.getElementById('s-tel').value = s.tel;
+                document.getElementById('s-ori').value = s.ori;
+                document.getElementById('s-des').value = s.des;
+                document.getElementById('s-data').value = s.data;
+                document.getElementById('s-hora').value = s.hora;
+                document.getElementById('btn-del-sched').classList.remove('hidden');
+            } else {
+                document.querySelectorAll('#modal-sched input').forEach(i => i.value = "");
+                document.getElementById('s-data').value = new Date().toISOString().split('T')[0];
+                document.getElementById('btn-del-sched').classList.add('hidden');
+            }
+            document.getElementById('modal-sched').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function saveSched() {
+            const s = {
+                id: curId || Date.now(),
+                nome: document.getElementById('s-nome').value,
+                tel: document.getElementById('s-tel').value,
+                ori: document.getElementById('s-ori').value,
+                des: document.getElementById('s-des').value,
+                data: document.getElementById('s-data').value,
+                hora: document.getElementById('s-hora').value
+            };
+            if(!s.nome || !s.ori) return alert("Preencha Nome e Origem");
+            if(curId) scheds = scheds.map(x => x.id == curId ? s : x); else scheds.push(s);
+            localStorage.setItem('gat_sched', JSON.stringify(scheds));
             closeAllPopups();
+            updateSchedList();
         }
 
-        function openCatManager(type) {
-            managerType = type;
-            document.getElementById('cat-title').innerText = "Categorias " + type;
-            renderCats();
-            showView('cat-manager-view');
-        }
-
-        function renderCats() {
-            const c = managerType === 'Receita' ? catsRec : catsExp;
-            document.getElementById('cat-list').innerHTML = c.map(cat => `
-                <div class="cat-item">
-                    <span>${cat}</span>
-                    <i class="fas fa-trash" style="color:#ccc; padding: 10px;" onclick="openDeleteModal('category', '${cat}')"></i>
+        function updateSchedList() {
+            const list = document.getElementById('list-agendamentos');
+            list.innerHTML = scheds.sort((a,b) => a.data.localeCompare(b.data)).map(s => `
+                <div style="background:white; padding:15px; border-radius:10px; margin-bottom:10px; border-left:5px solid var(--scheduled-blue)" onclick="openSchedModal(${s.id})">
+                    <div style="display:flex; justify-content:space-between">
+                        <strong>${s.nome}</strong>
+                        <small>${s.data.split('-').reverse().join('/')} - ${s.hora}</small>
+                    </div>
+                    <div style="font-size:0.8rem; color:#666; margin-top:5px">De: ${s.ori}<br>Para: ${s.des}</div>
                 </div>
             `).join('');
         }
 
-        function saveCats() { localStorage.setItem('gat_crec', JSON.stringify(catsRec)); localStorage.setItem('gat_cexp', JSON.stringify(catsExp)); }
-        
-        function setFilter() { 
-            const ini = document.getElementById('f-ini').value;
-            const fim = document.getElementById('f-fim').value;
-            if(!ini || !fim) return alert("Selecione as duas datas");
-            fStart = ini; fEnd = fim; 
-            showView('home-view'); 
+        function deleteSched() {
+            if(confirm("Excluir agendamento?")) {
+                scheds = scheds.filter(x => x.id != curId);
+                localStorage.setItem('gat_sched', JSON.stringify(scheds));
+                closeAllPopups();
+                updateSchedList();
+            }
         }
 
-        function clearFilter() { 
-            fStart = fEnd = null; 
-            document.getElementById('f-ini').value = "";
-            document.getElementById('f-fim').value = "";
-            showView('home-view'); 
+        function exportarBackup() {
+            const data = JSON.stringify({ db, scheds });
+            const blob = new Blob([data], {type: "application/json"});
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "GAT_Backup.json";
+            a.click();
         }
 
-        function openNav() { document.getElementById("sidebar").style.width = "280px"; document.getElementById("overlay").style.display = "block"; }
-        function closeNav() { document.getElementById("sidebar").style.width = "0"; document.getElementById("overlay").style.display = "none"; }
+        function importarBackup() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.onchange = e => {
+                const reader = new FileReader();
+                reader.onload = r => {
+                    const content = JSON.parse(r.target.result);
+                    db = content.db; scheds = content.scheds;
+                    localStorage.setItem('gat_db', JSON.stringify(db));
+                    localStorage.setItem('gat_sched', JSON.stringify(scheds));
+                    location.reload();
+                };
+                reader.readAsText(e.target.files[0]);
+            };
+            input.click();
+        }
 
         updateHome();
     </script>
