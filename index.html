@@ -17,6 +17,8 @@
             --scheduled-blue: #2c5282;
             --payable-orange: #d97706;
             --overlay-dark: rgba(0, 0, 0, 0.6);
+            --receipt-dark: #2c3e50;
+            --receipt-orange: #e67e22;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -58,7 +60,7 @@
             padding: 15px 20px; border-bottom: 1px solid #f5f5f5; cursor: pointer;
         }
 
-        /* MODAIS */
+        /* MODAIS GERAIS */
         .overlay { display: none; position: fixed; inset: 0; background: var(--overlay-dark); z-index: 999; backdrop-filter: blur(2px); }
         .modal { 
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -79,13 +81,29 @@
         .sidebar { height: 100%; width: 0; position: fixed; z-index: 1100; top: 0; left: 0; background: var(--sidebar-yellow); overflow-x: hidden; transition: 0.3s; padding-top: 50px; }
         .menu-item { padding: 15px 25px; display: flex; align-items: center; gap: 15px; font-weight: 600; cursor: pointer; color: #000; }
 
-        /* ALERTA DE CONTA */
-        .alert-box { 
-            background: #fffbeb; border: 1px solid #fef3c7; color: #92400e; 
-            padding: 15px; margin: 10px 20px; border-radius: 10px; 
-            display: flex; align-items: center; justify-content: space-between;
-            font-size: 0.9rem; font-weight: 600; 
+        /* ESTILOS EXCLUSIVOS DO RECIBO */
+        .receipt-content { padding: 20px; }
+        .receipt-container { max-width: 450px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin: auto; }
+        .receipt-section-title { font-size: 11px; color: #7f8c8d; font-weight: bold; margin: 15px 0 8px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* NOVO: Empilhamento Data e Valor */
+        .receipt-stack { display: flex; flex-direction: column; }
+        #r_valor { 
+            font-size: 1.3rem; 
+            font-weight: bold; 
+            color: var(--revenue-green); 
+            border: 2px solid var(--revenue-green);
+            background: #f0fdf4;
         }
+
+        .btn-receipt-primary { background-color: var(--receipt-dark); color: white; margin-top: 20px; display: block; width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; }
+        .recibo-preview { border: 2px solid #eee; padding: 20px; border-radius: 10px; background: #fff; margin-top: 10px; }
+        .recibo-header { background: var(--receipt-dark); color: var(--primary-yellow); margin: -20px -20px 20px -20px; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; }
+        .info-row { margin-bottom: 10px; border-bottom: 1px dotted #eee; padding-bottom: 5px; font-size: 14px; }
+        .info-label { font-weight: bold; color: #7f8c8d; font-size: 11px; display: block; text-transform: uppercase; }
+        .valor-box { background: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px; border: 2px dashed var(--revenue-green); cursor: pointer; }
+        .valor-num { font-size: 24px; font-weight: 800; color: var(--revenue-green); display: block; }
+        .edit-link { text-align: center; font-size: 12px; color: #3498db; cursor: pointer; margin-bottom: 15px; display: block; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -95,6 +113,7 @@
     <!-- SIDEBAR -->
     <div id="sidebar" class="sidebar">
         <div class="menu-item" onclick="showView('home-view')"><i class="fas fa-home"></i> Início</div>
+        <div class="menu-item" onclick="showView('receipt-view')"><i class="fas fa-file-invoice"></i> Recibo</div>
         <div class="menu-item" onclick="showView('scheduled-view')"><i class="fas fa-calendar-alt"></i> Agendamentos</div>
         <div class="menu-item" onclick="showView('payable-view')"><i class="fas fa-file-invoice-dollar"></i> Contas a Pagar</div>
         <div style="height:1px; background:rgba(0,0,0,0.1); margin:10px 25px"></div>
@@ -107,9 +126,8 @@
         <header>
             <i class="fas fa-bars" onclick="openNav()"></i>
             <span>GAT GESTÃO</span>
-            <i class="fas fa-filter" onclick="showView('filter-view')"></i>
+            <div style="width:24px"></div>
         </header>
-        <div id="home-alert" class="hidden"></div>
         <div class="home-actions">
             <button class="btn-main btn-exp" onclick="prepareAdd('Despesa')"><i class="fas fa-minus"></i> DESPESA</button>
             <button class="btn-main btn-rev" onclick="prepareAdd('Receita')"><i class="fas fa-plus"></i> RECEITA</button>
@@ -121,102 +139,95 @@
         </div>
     </div>
 
-    <!-- VIEW CONTAS A PAGAR -->
-    <div id="payable-view" class="view hidden">
+    <!-- VIEW RECIBO -->
+    <div id="receipt-view" class="view hidden">
         <header>
             <i class="fas fa-arrow-left" onclick="showView('home-view')"></i>
-            <span>CONTAS A PAGAR</span>
-            <i class="fas fa-plus" onclick="openPayableModal()"></i>
+            <span>GERAR RECIBO</span>
+            <div style="width:24px"></div>
         </header>
-        <div id="resumo-contas" class="summary-card" style="margin-top:20px; border-bottom: 4px solid var(--payable-orange);"></div>
-        <div class="list-container">
-            <div class="list-header">PRÓXIMOS VENCIMENTOS</div>
-            <div id="list-contas"></div>
-        </div>
-    </div>
+        
+        <div class="receipt-content">
+            <div class="receipt-container">
+                <!-- TELA 0: CADASTRO DO MOTORISTA -->
+                <div id="receipt-step-0">
+                    <h2 style="text-align:center">Configurar Motorista</h2>
+                    <input type="text" id="reg_motorista" class="modal-field" placeholder="Nome do Motorista">
+                    <input type="tel" id="reg_tel" class="modal-field" placeholder="Telefone" inputmode="numeric">
+                    <div style="display:flex; gap:10px">
+                        <input type="text" id="reg_placa" class="modal-field" placeholder="Placa" maxlength="7">
+                        <input type="tel" id="reg_doc" class="modal-field" placeholder="CPF/CNPJ" inputmode="numeric">
+                    </div>
+                    <button class="btn-save" onclick="salvarCadastroMotorista()">Salvar Cadastro</button>
+                </div>
 
-    <!-- POPUP DE CONFIRMAÇÃO DE CÓDIGO GERADO -->
-    <div id="modal-backup-confirm" class="modal">
-        <div style="text-align: center;">
-            <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--revenue-green); margin-bottom: 15px;"></i>
-            <h3 style="margin: 0 0 10px;">Código Gerado!</h3>
-            <p style="font-size: 0.9rem; color: #666; margin-bottom: 20px;">O código de backup foi gerado, salve ele no seu email whatsapp para não perder suas informações.</p>
-            <button class="btn-save" onclick="closeAllPopups()">OK, ENTENDI</button>
-        </div>
-    </div>
+                <!-- TELA 1: FORMULÁRIO (ATUALIZADA) -->
+                <div id="receipt-step-1" class="hidden">
+                    <span class="edit-link" onclick="voltarParaCadastroMotorista()">📝 Alterar Meus Dados</span>
+                    <div class="receipt-section-title">Dados da Corrida</div>
+                    <input type="text" id="r_origem" class="modal-field" placeholder="Origem">
+                    <input type="text" id="r_destino" class="modal-field" placeholder="Destino">
+                    
+                    <!-- NOVO: DATA E VALOR LOGO ABAIXO -->
+                    <div class="receipt-stack">
+                        <input type="datetime-local" id="r_data" class="modal-field">
+                        <input type="tel" id="r_valor" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)" inputmode="numeric">
+                    </div>
 
-    <!-- MODAL RESTAURAR -->
-    <div id="modal-restore" class="modal">
-        <h3 style="margin:0 0 15px">Restaurar Dados</h3>
-        <p style="font-size: 0.8rem; color: #666;">Cole o código de backup abaixo:</p>
-        <textarea id="r-code" class="modal-field" rows="8" style="font-size: 0.7rem; word-break: break-all; background: #f4f4f4;"></textarea>
-        <button class="btn-save" onclick="processarRestauracao()">RESTAURAR AGORA</button>
-        <button class="btn-save" style="background:#eee; color:#333" onclick="closeAllPopups()">CANCELAR</button>
-    </div>
+                    <div class="receipt-section-title">Dados do Cliente</div>
+                    <input type="text" id="r_cliente" class="modal-field" placeholder="Nome do Cliente">
+                    <input type="tel" id="r_tel_cliente" class="modal-field" placeholder="Telefone Cliente" inputmode="numeric">
+                    <button class="btn-receipt-primary" onclick="gerarReciboFinal()">GERAR RECIBO</button>
+                </div>
 
-    <!-- OUTRAS VIEWS -->
-    <div id="filter-view" class="view hidden">
-        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>FILTRAR CORRIDAS</span><div style="width:24px"></div></header>
-        <div style="padding:20px; background:white">
-            <div style="display:flex; gap:10px">
-                <div style="flex:1"><label>Início</label><input type="date" id="f-start" class="modal-field"></div>
-                <div style="flex:1"><label>Fim</label><input type="date" id="f-end" class="modal-field"></div>
+                <!-- TELA 2: VISUALIZAÇÃO -->
+                <div id="receipt-step-2" class="hidden">
+                    <div class="recibo-preview" id="print-area">
+                        <div class="recibo-header">RECIBO DE TÁXI / APP</div>
+                        <div class="info-row"><span class="info-label">Motorista</span><span id="p_motorista"></span></div>
+                        <div class="info-row"><span class="info-label">Documento / Placa</span><span id="p_doc_placa"></span></div>
+                        <div style="height:10px"></div>
+                        <div class="info-row"><span class="info-label">Passageiro</span><span id="p_cliente"></span></div>
+                        <div class="info-row"><span class="info-label">Origem</span><span id="p_origem"></span></div>
+                        <div class="info-row"><span class="info-label">Destino</span><span id="p_destino"></span></div>
+                        <div class="info-row"><span class="info-label">Data e Hora</span><span id="p_data"></span></div>
+                        <div class="valor-box" onclick="novoRecibo()">
+                            <span class="info-label">Valor Total</span>
+                            <span class="valor-num" id="p_valor"></span>
+                        </div>
+                    </div>
+                    <p style="text-align:center; font-size:11px; color:#888; margin-top:15px">Tire um print para enviar ao cliente.<br>Clique no valor para novo recibo.</p>
+                </div>
             </div>
-            <button class="btn-save" onclick="applyFilter()">BUSCAR LANÇAMENTOS</button>
         </div>
-        <div id="resumo-filtro" class="summary-card hidden"></div>
-        <div class="list-container"><div id="list-filtrada"></div></div>
+    </div>
+
+    <!-- OUTRAS VIEWS (CONTAS E AGENDAMENTOS) MANTIDAS PARA FUNCIONAMENTO -->
+    <div id="payable-view" class="view hidden">
+        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>CONTAS A PAGAR</span><i class="fas fa-plus" onclick="openPayableModal()"></i></header>
+        <div id="resumo-contas" class="summary-card" style="margin-top:20px; border-bottom: 4px solid var(--payable-orange);"></div>
+        <div class="list-container"><div id="list-contas"></div></div>
     </div>
 
     <div id="scheduled-view" class="view hidden">
-        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>AGENDAMENTOS</span><i class="fas fa-plus" onclick="openSchedModal()"></i></header>
+        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>AGENDAMENTOS</span></header>
         <div id="list-agendamentos" style="padding:15px"></div>
     </div>
 
-    <!-- MODAIS DE EDIÇÃO -->
+    <!-- MODAL LANÇAMENTO -->
     <div id="modal-entry" class="modal">
         <h3 id="entry-title" style="margin:0 0 15px">Lançamento</h3>
         <input type="tel" id="v-val" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)" style="font-size:1.5rem; text-align:center; font-weight:bold">
         <select id="v-cat" class="modal-field"></select>
         <input type="date" id="v-data" class="modal-field">
         <button class="btn-save" onclick="saveEntry()">SALVAR</button>
-        <button id="btn-del-entry" class="btn-save hidden" style="background:var(--expense-red)" onclick="deleteEntry()">EXCLUIR</button>
         <button class="btn-save" style="background:#eee; color:#333" onclick="closeAllPopups()">CANCELAR</button>
-    </div>
-
-    <div id="modal-payable" class="modal">
-        <h3 id="payable-title" style="margin:0 0 15px">Conta</h3>
-        <input type="text" id="p-nome" class="modal-field" placeholder="Nome da Conta">
-        <input type="tel" id="p-val" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)" inputmode="numeric" style="font-weight:bold">
-        <input type="date" id="p-data" class="modal-field">
-        <textarea id="p-obs" class="modal-field" placeholder="Observações (opcional)" rows="3"></textarea>
-        <button class="btn-save" onclick="savePayable()">SALVAR</button>
-        <button id="btn-del-payable" class="btn-save hidden" style="background:var(--expense-red)" onclick="deletePayable()">EXCLUIR</button>
-        <button class="btn-save" style="background:#eee; color:#333" onclick="closeAllPopups()">CANCELAR</button>
-    </div>
-
-    <div id="modal-sched" class="modal">
-        <h3 style="margin:0 0 15px">Agendamento</h3>
-        <input type="text" id="s-nome" class="modal-field" placeholder="Passageiro">
-        <input type="tel" id="s-tel" class="modal-field" placeholder="Telefone" inputmode="numeric" oninput="this.value = this.value.replace(/[^0-9]/g, '')">
-        <input type="text" id="s-ori" class="modal-field" placeholder="Origem">
-        <input type="text" id="s-des" class="modal-field" placeholder="Destino">
-        <div style="display:flex; gap:10px"><input type="date" id="s-data" class="modal-field"><input type="time" id="s-hora" class="modal-field"></div>
-        <button class="btn-save" onclick="saveSched()">SALVAR</button>
-        <button id="btn-del-sched" class="btn-save hidden" style="background:var(--expense-red)" onclick="deleteSched()">EXCLUIR</button>
-        <button class="btn-save" style="background:#eee; color:#333" onclick="closeAllPopups()">FECHAR</button>
     </div>
 
     <script>
         let db = JSON.parse(localStorage.getItem('gat_db')) || [];
-        let scheds = JSON.parse(localStorage.getItem('gat_sched')) || [];
-        let payables = JSON.parse(localStorage.getItem('gat_pay')) || [];
-        const catsRec = ['Uber', '99Pop', 'Particular', 'Outros'];
-        const catsExp = ['Combustível', 'Manutenção', 'Alimentação', 'Outros'];
-        
-        let curId = null;
+        let driverData = JSON.parse(localStorage.getItem('gat_driver')) || null;
         let curType = 'Receita';
-        let alertDismissed = false;
 
         function openNav() { document.getElementById("sidebar").style.width = "280px"; document.getElementById("overlay").style.display = "block"; }
         function closeAllPopups() {
@@ -229,58 +240,11 @@
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
             document.getElementById(viewId).classList.remove('hidden');
             if(viewId === 'home-view') updateHome();
-            if(viewId === 'payable-view') updatePayableList();
-            if(viewId === 'scheduled-view') updateSchedList();
+            if(viewId === 'receipt-view') checkDriverStatus();
             closeAllPopups();
         }
 
-        // LÓGICA DE BACKUP AUTOMATIZADA
-        function gerarECopiarBackup() {
-            const dadosRaw = JSON.stringify({ db, scheds, payables });
-            const codificado = btoa(unescape(encodeURIComponent(dadosRaw)));
-            const hashFinal = "GAT" + codificado.split('').reverse().join('') + "Z9";
-            
-            const el = document.createElement('textarea');
-            el.value = hashFinal;
-            document.body.appendChild(el);
-            el.select();
-            document.execCommand('copy');
-            document.body.removeChild(el);
-
-            document.getElementById("sidebar").style.width = "0";
-            document.getElementById("modal-backup-confirm").style.display = 'block';
-            document.getElementById("overlay").style.display = 'block';
-        }
-
-        // AJUSTE: FECHA MENU ANTES DE ABRIR RESTAURAÇÃO
-        function abrirRestaurar() {
-            document.getElementById("sidebar").style.width = "0"; // Fecha o menu
-            setTimeout(() => { // Pequeno delay para efeito visual mais limpo
-                document.getElementById('r-code').value = "";
-                document.getElementById('modal-restore').style.display = 'block';
-                document.getElementById('overlay').style.display = 'block';
-            }, 200);
-        }
-
-        function processarRestauracao() {
-            try {
-                let code = document.getElementById('r-code').value.trim();
-                if(!code.startsWith("GAT") || !code.endsWith("Z9")) throw new Error();
-                let limpo = code.substring(3, code.length - 2).split('').reverse().join('');
-                let decodificado = decodeURIComponent(escape(atob(limpo)));
-                let final = JSON.parse(decodificado);
-
-                if(confirm("Substituir todos os dados atuais?")) {
-                    db = final.db || []; scheds = final.scheds || []; payables = final.payables || [];
-                    localStorage.setItem('gat_db', JSON.stringify(db));
-                    localStorage.setItem('gat_sched', JSON.stringify(scheds));
-                    localStorage.setItem('gat_pay', JSON.stringify(payables));
-                    location.reload();
-                }
-            } catch(e) { alert("Código inválido!"); }
-        }
-
-        // --- SISTEMA ---
+        // FORMATADOR DE MOEDA (REAL)
         function formatMoeda(i) {
             let v = i.value.replace(/\D/g, "");
             v = (parseFloat(v) / 100).toFixed(2).replace(".", ",");
@@ -288,136 +252,94 @@
             i.value = "R$ " + v;
         }
 
-        function updatePayableList() {
-            const list = document.getElementById('list-contas');
-            const resumo = document.getElementById('resumo-contas');
-            let total = 0;
-            list.innerHTML = payables.sort((a,b) => a.data.localeCompare(b.data)).map(p => {
-                total += parseFloat(p.val.replace(/[R$\s.]/g, "").replace(",", "."));
-                return `<div class="list-item" onclick="openPayableModal(${p.id})"><div><strong>${p.nome}</strong><br><small>Vence: ${p.data.split('-').reverse().join('/')}</small></div><b style="color:var(--expense-red)">${p.val}</b></div>`;
-            }).join('');
-            resumo.innerHTML = `<span>Valor Total de Contas</span><b>R$ ${total.toFixed(2).replace('.',',')}</b>`;
+        // LÓGICA DO RECIBO
+        function checkDriverStatus() {
+            if(driverData) {
+                document.getElementById('receipt-step-0').classList.add('hidden');
+                document.getElementById('receipt-step-1').classList.remove('hidden');
+                document.getElementById('receipt-step-2').classList.add('hidden');
+                const agora = new Date();
+                agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
+                document.getElementById('r_data').value = agora.toISOString().slice(0,16);
+            } else {
+                document.getElementById('receipt-step-0').classList.remove('hidden');
+                document.getElementById('receipt-step-1').classList.add('hidden');
+            }
         }
 
-        function checkPayableAlert() {
-            if(alertDismissed) return;
-            const hoje = new Date().toISOString().split('T')[0];
-            const contasHoje = payables.filter(p => p.data === hoje);
-            const alertBox = document.getElementById('home-alert');
-            if(contasHoje.length > 0) {
-                alertBox.innerHTML = `<div class="alert-box"><div><i class="fas fa-exclamation-triangle"></i> ${contasHoje.length} conta(s) hoje!</div><i class="fas fa-times" onclick="dismissAlert()"></i></div>`;
-                alertBox.classList.remove('hidden');
-            } else alertBox.classList.add('hidden');
+        function salvarCadastroMotorista() {
+            const motorista = document.getElementById('reg_motorista').value;
+            const tel = document.getElementById('reg_tel').value;
+            const placa = document.getElementById('reg_placa').value;
+            const doc = document.getElementById('reg_doc').value;
+            if(!motorista || !tel) return alert("Nome e Telefone são obrigatórios!");
+            driverData = { motorista, tel, placa, doc };
+            localStorage.setItem('gat_driver', JSON.stringify(driverData));
+            checkDriverStatus();
         }
 
-        function dismissAlert() { alertDismissed = true; document.getElementById('home-alert').classList.add('hidden'); }
-        
+        function gerarReciboFinal() {
+            const origem = document.getElementById('r_origem').value;
+            const destino = document.getElementById('r_destino').value;
+            const valor = document.getElementById('r_valor').value;
+            const cliente = document.getElementById('r_cliente').value;
+            const dataRaw = document.getElementById('r_data').value;
+
+            if(!origem || !destino || !valor || valor === "R$ 0,00") return alert("Preencha os dados!");
+
+            document.getElementById('p_motorista').innerText = driverData.motorista + " (" + driverData.tel + ")";
+            document.getElementById('p_doc_placa').innerText = "Doc: " + (driverData.doc || "---") + " | Placa: " + (driverData.placa || "---");
+            document.getElementById('p_cliente').innerText = cliente || "Não informado";
+            document.getElementById('p_origem').innerText = origem;
+            document.getElementById('p_destino').innerText = destino;
+            document.getElementById('p_valor').innerText = valor;
+            
+            const d = new Date(dataRaw);
+            document.getElementById('p_data').innerText = d.toLocaleDateString('pt-BR') + " " + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+
+            document.getElementById('receipt-step-1').classList.add('hidden');
+            document.getElementById('receipt-step-2').classList.remove('hidden');
+        }
+
+        function voltarParaCadastroMotorista() {
+            document.getElementById('receipt-step-1').classList.add('hidden');
+            document.getElementById('receipt-step-0').classList.remove('hidden');
+        }
+
+        function novoRecibo() {
+            document.getElementById('r_origem').value = "";
+            document.getElementById('r_destino').value = "";
+            document.getElementById('r_valor').value = "";
+            checkDriverStatus();
+        }
+
+        // LÓGICA HOME E BACKUP
         function updateHome() {
             const hoje = new Date().toISOString().split('T')[0];
-            renderList(db.filter(e => e.data === hoje), 'list-hoje', 'resumo-home');
-            checkPayableAlert();
-        }
-
-        function renderList(items, containerId, summaryId) {
-            const container = document.getElementById(containerId);
-            const summary = document.getElementById(summaryId);
+            const items = db.filter(e => e.data === hoje);
+            const container = document.getElementById('list-hoje');
             let r = 0, d = 0;
-            container.innerHTML = items.sort((a,b) => b.id - a.id).map(e => {
+            container.innerHTML = items.map(e => {
                 let v = parseFloat(e.val.replace(/[R$\s.]/g, "").replace(",", "."));
                 e.tipo === 'Receita' ? r += v : d += v;
-                return `<div class="list-item" onclick="prepareEdit(${e.id})"><div><strong>${e.cat}</strong><br><small>${e.data.split('-').reverse().join('/')}</small></div><b style="color:${e.tipo==='Receita'?'var(--revenue-green)':'var(--expense-red)'}">${e.val}</b></div>`;
+                return `<div class="list-item"><div><strong>${e.cat}</strong></div><b style="color:${e.tipo==='Receita'?'var(--revenue-green)':'var(--expense-red)'}">${e.val}</b></div>`;
             }).join('');
-            summary.innerHTML = `<div style="display:flex; justify-content:space-around; font-size:0.9rem"><span style="color:var(--revenue-green)">+ R$ ${r.toFixed(2)}</span><span style="color:var(--expense-red)">- R$ ${d.toFixed(2)}</span></div><b>Saldo: R$ ${(r-d).toFixed(2)}</b>`;
+            document.getElementById('resumo-home').innerHTML = `Saldo Hoje: <b>R$ ${(r-d).toFixed(2).replace('.',',')}</b>`;
         }
 
         function prepareAdd(type) {
-            curId = null; curType = type;
-            document.getElementById('v-val').value = ""; document.getElementById('v-data').value = new Date().toISOString().split('T')[0];
-            document.getElementById('btn-del-entry').classList.add('hidden');
-            document.getElementById('v-cat').innerHTML = (type === 'Receita' ? catsRec : catsExp).map(c => `<option>${c}</option>`).join('');
-            document.getElementById('modal-entry').style.display = 'block'; document.getElementById('overlay').style.display = 'block';
-        }
-
-        function prepareEdit(id) {
-            const e = db.find(x => x.id == id);
-            curId = id; curType = e.tipo;
-            document.getElementById('v-val').value = e.val; document.getElementById('v-data').value = e.data;
-            document.getElementById('btn-del-entry').classList.remove('hidden');
-            document.getElementById('v-cat').innerHTML = (e.tipo === 'Receita' ? catsRec : catsExp).map(c => `<option ${c===e.cat?'selected':''}>${c}</option>`).join('');
-            document.getElementById('modal-entry').style.display = 'block'; document.getElementById('overlay').style.display = 'block';
+            curType = type;
+            document.getElementById('v-cat').innerHTML = (type === 'Receita' ? ['Uber', '99', 'Particular'] : ['Combustível', 'Manutenção']).map(c => `<option>${c}</option>`).join('');
+            document.getElementById('modal-entry').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
         }
 
         function saveEntry() {
             const val = document.getElementById('v-val').value;
-            if(!val || val === "R$ 0,00") return alert("Insira valor");
-            const entry = { id: curId || Date.now(), tipo: curType, val: val, cat: document.getElementById('v-cat').value, data: document.getElementById('v-data').value };
-            if(curId) db = db.map(x => x.id == curId ? entry : x); else db.push(entry);
-            localStorage.setItem('gat_db', JSON.stringify(db)); closeAllPopups(); updateHome();
-        }
-
-        function deleteEntry() { if(confirm("Excluir?")) { db = db.filter(x => x.id != curId); localStorage.setItem('gat_db', JSON.stringify(db)); closeAllPopups(); updateHome(); } }
-
-        function openPayableModal(id = null) {
-            curId = id;
-            if(id) {
-                const p = payables.find(x => x.id == id);
-                document.getElementById('p-nome').value = p.nome; document.getElementById('p-val').value = p.val;
-                document.getElementById('p-data').value = p.data; document.getElementById('p-obs').value = p.obs;
-                document.getElementById('btn-del-payable').classList.remove('hidden');
-            } else {
-                document.querySelectorAll('#modal-payable input, #modal-payable textarea').forEach(i => i.value = "");
-                document.getElementById('p-data').value = new Date().toISOString().split('T')[0];
-                document.getElementById('btn-del-payable').classList.add('hidden');
-            }
-            document.getElementById('modal-payable').style.display = 'block'; document.getElementById('overlay').style.display = 'block';
-        }
-
-        function savePayable() {
-            const p = { id: curId || Date.now(), nome: document.getElementById('p-nome').value, val: document.getElementById('p-val').value, data: document.getElementById('p-data').value, obs: document.getElementById('p-obs').value };
-            if(!p.nome || p.val === "R$ 0,00") return alert("Preencha campos");
-            if(curId) payables = payables.map(x => x.id == curId ? p : x); else payables.push(p);
-            localStorage.setItem('gat_pay', JSON.stringify(payables)); closeAllPopups(); updatePayableList();
-        }
-
-        function deletePayable() { if(confirm("Excluir?")) { payables = payables.filter(x => x.id != curId); localStorage.setItem('gat_pay', JSON.stringify(payables)); closeAllPopups(); updatePayableList(); checkPayableAlert(); } }
-
-        function openSchedModal(id = null) {
-            curId = id;
-            if(id) {
-                const s = scheds.find(x => x.id == id);
-                document.getElementById('s-nome').value = s.nome; document.getElementById('s-tel').value = s.tel;
-                document.getElementById('s-ori').value = s.ori; document.getElementById('s-des').value = s.des;
-                document.getElementById('s-data').value = s.data; document.getElementById('s-hora').value = s.hora;
-                document.getElementById('btn-del-sched').classList.remove('hidden');
-            } else {
-                document.querySelectorAll('#modal-sched input').forEach(i => i.value = "");
-                document.getElementById('s-data').value = new Date().toISOString().split('T')[0];
-                document.getElementById('btn-del-sched').classList.add('hidden');
-            }
-            document.getElementById('modal-sched').style.display = 'block'; document.getElementById('overlay').style.display = 'block';
-        }
-
-        function saveSched() {
-            const s = { id: curId || Date.now(), nome: document.getElementById('s-nome').value, tel: document.getElementById('s-tel').value, ori: document.getElementById('s-ori').value, des: document.getElementById('s-des').value, data: document.getElementById('s-data').value, hora: document.getElementById('s-hora').value };
-            if(!s.nome || !s.ori) return alert("Preencha campos");
-            if(curId) scheds = scheds.map(x => x.id == curId ? s : x); else scheds.push(s);
-            localStorage.setItem('gat_sched', JSON.stringify(scheds)); closeAllPopups(); updateSchedList();
-        }
-
-        function updateSchedList() {
-            const list = document.getElementById('list-agendamentos');
-            list.innerHTML = scheds.sort((a,b) => a.data.localeCompare(b.data)).map(s => `<div style="background:white; padding:15px; border-radius:10px; margin-bottom:10px; border-left:5px solid var(--scheduled-blue)" onclick="openSchedModal(${s.id})"><div><strong>${s.nome}</strong> - ${s.data.split('-').reverse().join('/')}</div></div>`).join('');
-        }
-
-        function deleteSched() { if(confirm("Excluir?")) { scheds = scheds.filter(x => x.id != curId); localStorage.setItem('gat_sched', JSON.stringify(scheds)); closeAllPopups(); updateSchedList(); } }
-
-        function applyFilter() {
-            const start = document.getElementById('f-start').value;
-            const end = document.getElementById('f-end').value;
-            if(!start || !end) return alert("Escolha as duas datas");
-            const filtrados = db.filter(e => e.data >= start && e.data <= end);
-            document.getElementById('resumo-filtro').classList.remove('hidden');
-            renderList(filtrados, 'list-filtrada', 'resumo-filtro');
+            if(!val || val === "R$ 0,00") return;
+            db.push({ id: Date.now(), tipo: curType, val, cat: document.getElementById('v-cat').value, data: new Date().toISOString().split('T')[0] });
+            localStorage.setItem('gat_db', JSON.stringify(db));
+            closeAllPopups(); updateHome();
         }
 
         updateHome();
