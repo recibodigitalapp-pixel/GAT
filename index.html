@@ -32,6 +32,8 @@
             position: sticky; top: 0; z-index: 100;
         }
 
+        .header-action-icon { font-size: 22px; cursor: pointer; padding: 5px; }
+
         /* Sidebar */
         .overlay { display: none; position: fixed; inset: 0; background: var(--overlay-dark); z-index: 999; backdrop-filter: blur(2px); }
         .sidebar { height: 100%; width: 0; position: fixed; z-index: 1100; top: 0; left: 0; background: var(--sidebar-yellow); overflow-x: hidden; transition: 0.3s; padding-top: 50px; }
@@ -75,10 +77,8 @@
             user-select: all;
         }
 
-        /* Estilo do Popup de Alerta */
         .alert-popup { text-align: center; }
         .alert-icon { font-size: 50px; margin-bottom: 15px; }
-        .alert-item { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary-yellow); text-align: left; }
     </style>
 </head>
 <body>
@@ -174,9 +174,12 @@
 
     <!-- AGENDAMENTOS -->
     <div id="scheduled-view" class="view hidden">
-        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>AGENDAMENTOS</span><div style="width:24px"></div></header>
+        <header>
+            <i class="fas fa-arrow-left" onclick="showView('home-view')"></i>
+            <span>AGENDAMENTOS</span>
+            <i class="fas fa-plus header-action-icon" onclick="prepareAddAgenda()"></i>
+        </header>
         <div class="content-padding">
-            <button class="btn-save" style="background:var(--scheduled-blue); margin-bottom:20px" onclick="prepareAddAgenda()">NOVO AGENDAMENTO</button>
             <div id="list-agenda"></div>
         </div>
     </div>
@@ -186,7 +189,7 @@
         <header>
             <i class="fas fa-arrow-left" onclick="showView('home-view')"></i>
             <span>CONTAS A PAGAR</span>
-            <i class="fas fa-plus" style="font-size: 20px; cursor: pointer;" onclick="prepareAddConta()"></i>
+            <i class="fas fa-plus header-action-icon" style="font-size: 20px;" onclick="prepareAddConta()"></i>
         </header>
         <div class="content-padding">
             <div id="list-contas"></div>
@@ -219,7 +222,7 @@
         <label>Data e Hora</label>
         <input type="datetime-local" id="a-data" class="modal-field">
         <label>Observações</label>
-        <textarea id="a-obs" class="modal-field" style="height: 80px; resize: none;" placeholder="Detalhes da corrida..."></textarea>
+        <textarea id="a-obs" class="modal-field" style="height: 80px; resize: none;" placeholder="Detalhes da corrida (Opcional)..."></textarea>
         <button class="btn-save" style="background:var(--scheduled-blue)" onclick="saveAgenda()">SALVAR</button>
         <button id="btn-delete-agenda" class="btn-delete" onclick="openConfirmDeleteAgenda()">EXCLUIR</button>
     </div>
@@ -247,6 +250,26 @@
                 <button class="btn-delete" style="margin:0; background:#eee; flex:1" onclick="closeModal('modal-confirm')">NÃO</button>
                 <button id="confirm-delete-btn" class="btn-save" style="background:var(--expense-red); flex:1">SIM, EXCLUIR</button>
             </div>
+        </div>
+    </div>
+
+    <!-- NOVO POPUP DE ALERTA DE CAMPOS -->
+    <div id="modal-alert-fields" class="modal">
+        <div style="text-align:center">
+            <i class="fas fa-clipboard-list" style="font-size:50px; color:var(--payable-orange)"></i>
+            <h3 style="margin-top:15px">Campos Incompletos</h3>
+            <p style="color:#666; margin-bottom:20px">Por favor, preencha todos os campos obrigatórios para salvar o agendamento.</p>
+            <button class="btn-save" style="background:var(--payable-orange)" onclick="closeModal('modal-alert-fields')">ENTENDI</button>
+        </div>
+    </div>
+
+    <!-- MODAL DATA ALERT (FILTRO) -->
+    <div id="modal-date-alert" class="modal">
+        <div style="text-align:center">
+            <i class="fas fa-calendar-exclamation" style="font-size:50px; color:var(--payable-orange)"></i>
+            <h3 style="margin-top:15px">Atenção!</h3>
+            <p style="color:#666; margin-bottom:20px">É necessário preencher a <b>Data Inicial</b> e a <b>Data Final</b> para realizar o filtro.</p>
+            <button class="btn-save" style="background:var(--payable-orange)" onclick="closeModal('modal-date-alert')">ENTENDI</button>
         </div>
     </div>
 
@@ -295,7 +318,6 @@
         let contas = JSON.parse(localStorage.getItem('gat_contas')) || [];
         let driverData = JSON.parse(localStorage.getItem('gat_driver')) || null;
         
-        // Categorias Padrão
         let catReceita = JSON.parse(localStorage.getItem('gat_cat_receita')) || ['Uber', '99', 'Particular'];
         let catDespesa = JSON.parse(localStorage.getItem('gat_cat_despesa')) || ['Combustível', 'Manutenção', 'Alimentação'];
         
@@ -304,7 +326,7 @@
 
         function openNav() { document.getElementById("sidebar").style.width = "280px"; document.getElementById("overlay").style.display = "block"; }
         function openModal(id) { document.getElementById(id).style.display = 'block'; document.getElementById("overlay").style.display = "block"; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; if(id !== 'modal-confirm') document.getElementById("overlay").style.display = "none"; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; if(!Array.from(document.querySelectorAll('.modal')).some(m => m.style.display === 'block')) document.getElementById("overlay").style.display = "none"; }
         
         function closeAllPopups() {
             document.getElementById("sidebar").style.width = "0";
@@ -332,15 +354,12 @@
             i.value = "R$ " + v;
         }
 
-        // --- LÓGICA DE FILTRO ---
         function aplicarFiltro() {
             const ini = document.getElementById('f-inicio').value;
             const fim = document.getElementById('f-fim').value;
-            
-            if(!ini || !fim) return alert("Selecione as duas datas!");
+            if(!ini || !fim) { openModal('modal-date-alert'); return; }
 
             const filtrados = db.filter(item => item.data >= ini && item.data <= fim);
-            
             let r = 0, d = 0;
             filtrados.forEach(e => {
                 let v = parseFloat(e.val.replace(/[R$\s.]/g, "").replace(",", "."));
@@ -351,12 +370,11 @@
             const summary = document.getElementById('filter-summary');
             summary.classList.remove('hidden');
             summary.innerHTML = `
-                <div style="font-size:20px; color:${(r-d) >= 0 ? 'var(--revenue-green)' : 'var(--expense-red)'}"><b>Saldo: R$ ${(r-d).toFixed(2).replace('.', settings=',')}</b></div>
+                <div style="font-size:20px; color:${(r-d) >= 0 ? 'var(--revenue-green)' : 'var(--expense-red)'}"><b>Saldo: R$ ${(r-d).toFixed(2).replace('.',',')}</b></div>
                 <div class="summary-grid">
                     <div class="summary-item"><span>Total Receitas</span><span class="summary-val">R$ ${r.toFixed(2).replace('.',',')}</span></div>
                     <div class="summary-item"><span>Total Despesas</span><span class="summary-val">R$ ${d.toFixed(2).replace('.',',')}</span></div>
-                </div>
-            `;
+                </div>`;
 
             const container = document.getElementById('list-filter');
             container.innerHTML = filtrados.length ? filtrados.map(e => `
@@ -379,12 +397,11 @@
                 db = db.filter(x => x.id !== parseInt(idParaExcluir));
                 localStorage.setItem('gat_db', JSON.stringify(db));
                 closeModal('modal-confirm');
-                aplicarFiltro(); // Recarrega a lista filtrada
+                aplicarFiltro();
             };
             openModal('modal-confirm');
         }
 
-        // --- LÓGICA DE CONFIGURAÇÃO DE CATEGORIAS ---
         function openConfig(tipo) {
             configAtual = tipo;
             document.getElementById('config-title').innerText = "Config. de " + tipo;
@@ -406,42 +423,28 @@
                 <div class="list-item">
                     <span>${c}</span>
                     <i class="fas fa-trash-alt" style="color:var(--expense-red); padding:10px" onclick="confirmDeleteCat(${index})"></i>
-                </div>
-            `).join('');
+                </div>`).join('');
         }
 
         function saveNewCategory() {
             const name = document.getElementById('new-cat-name').value.trim();
             if(!name) return alert("Digite o nome da categoria!");
-            if(configAtual === 'Receita') {
-                catReceita.push(name);
-                localStorage.setItem('gat_cat_receita', JSON.stringify(catReceita));
-            } else {
-                catDespesa.push(name);
-                localStorage.setItem('gat_cat_despesa', JSON.stringify(catDespesa));
-            }
-            closeModal('modal-cat');
-            updateCatList();
+            if(configAtual === 'Receita') { catReceita.push(name); localStorage.setItem('gat_cat_receita', JSON.stringify(catReceita)); }
+            else { catDespesa.push(name); localStorage.setItem('gat_cat_despesa', JSON.stringify(catDespesa)); }
+            closeModal('modal-cat'); updateCatList();
         }
 
         function confirmDeleteCat(index) {
             idParaExcluir = index;
             document.getElementById('confirm-msg').innerText = "Excluir esta categoria?";
             document.getElementById('confirm-delete-btn').onclick = () => {
-                if(configAtual === 'Receita') {
-                    catReceita.splice(idParaExcluir, 1);
-                    localStorage.setItem('gat_cat_receita', JSON.stringify(catReceita));
-                } else {
-                    catDespesa.splice(idParaExcluir, 1);
-                    localStorage.setItem('gat_cat_despesa', JSON.stringify(catDespesa));
-                }
-                closeModal('modal-confirm');
-                updateCatList();
+                if(configAtual === 'Receita') { catReceita.splice(idParaExcluir, 1); localStorage.setItem('gat_cat_receita', JSON.stringify(catReceita)); }
+                else { catDespesa.splice(idParaExcluir, 1); localStorage.setItem('gat_cat_despesa', JSON.stringify(catDespesa)); }
+                closeModal('modal-confirm'); updateCatList();
             };
             openModal('modal-confirm');
         }
 
-        // --- LÓGICA DE CONTAS A PAGAR ---
         function updateContas() {
             const container = document.getElementById('list-contas');
             container.innerHTML = contas.length ? contas.map(c => `
@@ -455,12 +458,9 @@
         }
 
         function prepareAddConta() {
-            document.getElementById('c-id').value = "";
-            document.getElementById('c-desc').value = "";
-            document.getElementById('c-val').value = "";
-            document.getElementById('c-venc').value = "";
-            document.getElementById('btn-delete-conta').style.display = 'none';
-            openModal('modal-contas');
+            document.getElementById('c-id').value = ""; document.getElementById('c-desc').value = "";
+            document.getElementById('c-val').value = ""; document.getElementById('c-venc').value = "";
+            document.getElementById('btn-delete-conta').style.display = 'none'; openModal('modal-contas');
         }
 
         function editConta(id) {
@@ -475,17 +475,10 @@
 
         function saveConta() {
             const id = document.getElementById('c-id').value;
-            const obj = {
-                id: id ? parseInt(id) : Date.now(),
-                desc: document.getElementById('c-desc').value,
-                val: document.getElementById('c-val').value,
-                venc: document.getElementById('c-venc').value
-            };
+            const obj = { id: id ? parseInt(id) : Date.now(), desc: document.getElementById('c-desc').value, val: document.getElementById('c-val').value, venc: document.getElementById('c-venc').value };
             if(!obj.desc || !obj.val) return alert("Preencha Descrição e Valor!");
-            if(id) contas = contas.map(x => x.id === parseInt(id) ? obj : x);
-            else contas.push(obj);
-            localStorage.setItem('gat_contas', JSON.stringify(contas));
-            closeAllPopups(); updateContas();
+            if(id) contas = contas.map(x => x.id === parseInt(id) ? obj : x); else contas.push(obj);
+            localStorage.setItem('gat_contas', JSON.stringify(contas)); closeAllPopups(); updateContas();
         }
 
         function openConfirmDeleteConta() {
@@ -494,14 +487,11 @@
             document.getElementById('confirm-msg').innerText = "Excluir esta conta?";
             document.getElementById('confirm-delete-btn').onclick = function() {
                 contas = contas.filter(x => x.id !== parseInt(idParaExcluir));
-                localStorage.setItem('gat_contas', JSON.stringify(contas));
-                closeAllPopups();
-                updateContas();
+                localStorage.setItem('gat_contas', JSON.stringify(contas)); closeAllPopups(); updateContas();
             };
             openModal('modal-confirm');
         }
 
-        // --- LÓGICA DE AGENDAMENTO ---
         function updateAgenda() {
             const container = document.getElementById('list-agenda');
             container.innerHTML = agenda.length ? agenda.map(a => `
@@ -516,14 +506,10 @@
         }
 
         function prepareAddAgenda() {
-            document.getElementById('a-id').value = "";
-            document.getElementById('a-cliente').value = "";
-            document.getElementById('a-tel').value = "";
-            document.getElementById('a-origem').value = "";
-            document.getElementById('a-destino').value = "";
-            document.getElementById('a-data').value = "";
-            document.getElementById('a-obs').value = "";
-            document.getElementById('btn-delete-agenda').style.display = 'none';
+            document.getElementById('a-id').value = ""; document.getElementById('a-cliente').value = "";
+            document.getElementById('a-tel').value = ""; document.getElementById('a-origem').value = "";
+            document.getElementById('a-destino').value = ""; document.getElementById('a-data').value = "";
+            document.getElementById('a-obs').value = ""; document.getElementById('btn-delete-agenda').style.display = 'none';
             openModal('modal-agenda');
         }
 
@@ -544,18 +530,22 @@
             const id = document.getElementById('a-id').value;
             const obj = {
                 id: id ? parseInt(id) : Date.now(),
-                cliente: document.getElementById('a-cliente').value,
-                tel: document.getElementById('a-tel').value,
-                origem: document.getElementById('a-origem').value,
-                destino: document.getElementById('a-destino').value,
+                cliente: document.getElementById('a-cliente').value.trim(),
+                tel: document.getElementById('a-tel').value.trim(),
+                origem: document.getElementById('a-origem').value.trim(),
+                destino: document.getElementById('a-destino').value.trim(),
                 data: document.getElementById('a-data').value,
-                obs: document.getElementById('a-obs').value
+                obs: document.getElementById('a-obs').value.trim()
             };
-            if(!obj.cliente || !obj.data) return alert("Preencha Nome e Data!");
-            if(id) agenda = agenda.map(x => x.id === parseInt(id) ? obj : x);
-            else agenda.push(obj);
-            localStorage.setItem('gat_agenda', JSON.stringify(agenda));
-            closeAllPopups(); updateAgenda();
+
+            // Validação de todos os campos exceto observações
+            if(!obj.cliente || !obj.tel || !obj.origem || !obj.destino || !obj.data) {
+                openModal('modal-alert-fields');
+                return;
+            }
+
+            if(id) agenda = agenda.map(x => x.id === parseInt(id) ? obj : x); else agenda.push(obj);
+            localStorage.setItem('gat_agenda', JSON.stringify(agenda)); closeAllPopups(); updateAgenda();
         }
 
         function openConfirmDeleteAgenda() {
@@ -564,32 +554,25 @@
             document.getElementById('confirm-msg').innerText = "Excluir este agendamento?";
             document.getElementById('confirm-delete-btn').onclick = function() {
                 agenda = agenda.filter(x => x.id !== parseInt(idParaExcluir));
-                localStorage.setItem('gat_agenda', JSON.stringify(agenda));
-                closeAllPopups();
-                updateAgenda();
+                localStorage.setItem('gat_agenda', JSON.stringify(agenda)); closeAllPopups(); updateAgenda();
             };
             openModal('modal-confirm');
         }
 
-        // --- FINANCEIRO HOME ---
         function updateHome() {
             const hoje = new Date().toISOString().split('T')[0];
             const items = db.filter(e => e.data === hoje);
             let r = 0, d = 0;
-            
             items.forEach(e => {
                 let v = parseFloat(e.val.replace(/[R$\s.]/g, "").replace(",", "."));
-                if(isNaN(v)) v = 0;
-                e.tipo === 'Receita' ? r += v : d += v;
+                if(isNaN(v)) v = 0; e.tipo === 'Receita' ? r += v : d += v;
             });
-
             document.getElementById('resumo-home').innerHTML = `
                 <div style="font-size:24px; color:${(r-d) >= 0 ? 'var(--revenue-green)' : 'var(--expense-red)'}"><b>R$ ${(r-d).toFixed(2).replace('.',',')}</b></div>
                 <div class="summary-grid">
                     <div class="summary-item"><span>Receitas</span><span class="summary-val">R$ ${r.toFixed(2).replace('.',',')}</span></div>
                     <div class="summary-item"><span>Despesas</span><span class="summary-val">R$ ${d.toFixed(2).replace('.',',')}</span></div>
                 </div>`;
-
             document.getElementById('list-hoje').innerHTML = items.length ? items.map(e => `
                 <div class="list-item" onclick="editEntry(${e.id})">
                     <span style="font-weight:600">${e.cat}</span>
@@ -598,15 +581,12 @@
         }
 
         function prepareAdd(type) {
-            document.getElementById('v-id').value = "";
-            document.getElementById('entry-title-text').innerText = type;
+            document.getElementById('v-id').value = ""; document.getElementById('entry-title-text').innerText = type;
             const cats = type === 'Receita' ? catReceita : catDespesa;
             document.getElementById('v-cat').innerHTML = cats.map(c => `<option>${c}</option>`).join('');
             document.getElementById('v-data').value = new Date().toISOString().split('T')[0];
-            document.getElementById('v-val').value = "";
-            document.getElementById('v-obs-entry').value = "";
-            document.getElementById('btn-delete-entry').style.display = 'none';
-            openModal('modal-entry');
+            document.getElementById('v-val').value = ""; document.getElementById('v-obs-entry').value = "";
+            document.getElementById('btn-delete-entry').style.display = 'none'; openModal('modal-entry');
         }
 
         function editEntry(id) {
@@ -618,27 +598,16 @@
             document.getElementById('v-data').value = item.data;
             document.getElementById('v-val').value = item.val;
             document.getElementById('v-obs-entry').value = item.obs || "";
-            document.getElementById('btn-delete-entry').style.display = 'block';
-            openModal('modal-entry');
+            document.getElementById('btn-delete-entry').style.display = 'block'; openModal('modal-entry');
         }
 
         function saveEntry() {
             const id = document.getElementById('v-id').value;
             const type = document.getElementById('entry-title-text').innerText;
-            const obj = {
-                id: id ? parseInt(id) : Date.now(),
-                tipo: type,
-                val: document.getElementById('v-val').value,
-                cat: document.getElementById('v-cat').value,
-                data: document.getElementById('v-data').value,
-                obs: document.getElementById('v-obs-entry').value
-            };
+            const obj = { id: id ? parseInt(id) : Date.now(), tipo: type, val: document.getElementById('v-val').value, cat: document.getElementById('v-cat').value, data: document.getElementById('v-data').value, obs: document.getElementById('v-obs-entry').value };
             if(!obj.val) return alert("Preencha o valor!");
-            if(id) db = db.map(x => x.id === parseInt(id) ? obj : x);
-            else db.push(obj);
-            localStorage.setItem('gat_db', JSON.stringify(db));
-            closeAllPopups(); 
-            updateHome();
+            if(id) db = db.map(x => x.id === parseInt(id) ? obj : x); else db.push(obj);
+            localStorage.setItem('gat_db', JSON.stringify(db)); closeAllPopups(); updateHome();
             if(!document.getElementById('filter-view').classList.contains('hidden')) aplicarFiltro();
         }
 
@@ -648,23 +617,15 @@
             document.getElementById('confirm-msg').innerText = "Excluir este lançamento?";
             document.getElementById('confirm-delete-btn').onclick = function() {
                 db = db.filter(x => x.id !== parseInt(idParaExcluir));
-                localStorage.setItem('gat_db', JSON.stringify(db));
-                closeAllPopups();
-                updateHome();
+                localStorage.setItem('gat_db', JSON.stringify(db)); closeAllPopups(); updateHome();
                 if(!document.getElementById('filter-view').classList.contains('hidden')) aplicarFiltro();
             };
-            openModal('modal-confirm');
+            openModal('confirm-delete-btn');
         }
 
-        // --- RECIBOS ---
         function checkDriver() {
-            if(!driverData) {
-                document.getElementById('receipt-step-0').classList.remove('hidden');
-                document.getElementById('receipt-step-1').classList.add('hidden');
-            } else {
-                document.getElementById('receipt-step-0').classList.add('hidden');
-                document.getElementById('receipt-step-1').classList.remove('hidden');
-            }
+            if(!driverData) { document.getElementById('receipt-step-0').classList.remove('hidden'); document.getElementById('receipt-step-1').classList.add('hidden'); }
+            else { document.getElementById('receipt-step-0').classList.add('hidden'); document.getElementById('receipt-step-1').classList.remove('hidden'); }
             document.getElementById('receipt-step-2').classList.add('hidden');
         }
 
@@ -672,8 +633,7 @@
             const nome = document.getElementById('reg_motorista').value;
             if(!nome) return alert("Digite seu nome!");
             driverData = { motorista: nome };
-            localStorage.setItem('gat_driver', JSON.stringify(driverData));
-            checkDriver();
+            localStorage.setItem('gat_driver', JSON.stringify(driverData)); checkDriver();
         }
 
         function gerarReciboFinal() {
@@ -686,7 +646,6 @@
             document.getElementById('receipt-step-2').classList.remove('hidden');
         }
 
-        // --- BACKUP ---
         function openExportModal() {
             closeAllPopups();
             const fullData = { db, agenda, contas, driverData, catReceita, catDespesa };
@@ -697,28 +656,21 @@
 
         function copyBackupCode() {
             const code = document.getElementById('backup-code-display').innerText;
-            navigator.clipboard.writeText(code).then(() => {
-                alert("Código copiado com sucesso!");
-            }).catch(() => {
-                alert("Falha ao copiar o código. Selecione e copie manualmente.");
-            });
+            navigator.clipboard.writeText(code).then(() => alert("Código copiado!")).catch(() => alert("Erro ao copiar."));
         }
 
         function openImportModal() {
-            closeAllPopups();
-            document.getElementById('import-code-input').value = "";
+            closeAllPopups(); document.getElementById('import-code-input').value = "";
             openModal('modal-import-backup');
         }
 
         function processImportCode() {
             const code = document.getElementById('import-code-input').value.trim();
-            if (!code) return alert("Cole o código de backup antes de restaurar!");
+            if (!code) return alert("Cole o código!");
             try {
                 const decodedData = JSON.parse(decodeURIComponent(escape(atob(code))));
-                db = decodedData.db || [];
-                agenda = decodedData.agenda || [];
-                contas = decodedData.contas || [];
-                driverData = decodedData.driverData || null;
+                db = decodedData.db || []; agenda = decodedData.agenda || [];
+                contas = decodedData.contas || []; driverData = decodedData.driverData || null;
                 catReceita = decodedData.catReceita || ['Uber', '99', 'Particular'];
                 catDespesa = decodedData.catDespesa || ['Combustível', 'Manutenção', 'Alimentação'];
                 localStorage.setItem('gat_db', JSON.stringify(db));
@@ -727,19 +679,11 @@
                 localStorage.setItem('gat_driver', JSON.stringify(driverData));
                 localStorage.setItem('gat_cat_receita', JSON.stringify(catReceita));
                 localStorage.setItem('gat_cat_despesa', JSON.stringify(catDespesa));
-                alert("Dados restaurados com sucesso!");
-                closeAllPopups();
-                updateHome();
-                checkDriver();
-            } catch (error) {
-                alert("Erro ao processar o código de backup.");
-            }
+                alert("Dados restaurados!"); closeAllPopups(); updateHome(); checkDriver();
+            } catch (error) { alert("Erro ao processar o código."); }
         }
 
-        window.onload = function() {
-            showView('home-view');
-            checkDriver();
-        };
+        window.onload = function() { showView('home-view'); checkDriver(); };
     </script>
 </body>
 </html>
