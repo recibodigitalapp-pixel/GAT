@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>GAT - Gestão Pro</title>
+    <title>GAT - Gestão Total Pro</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
@@ -18,7 +18,6 @@
             --payable-orange: #d97706;
             --overlay-dark: rgba(0, 0, 0, 0.6);
             --receipt-dark: #2c3e50;
-            --receipt-orange: #e67e22;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -32,176 +31,247 @@
             padding: 15px 20px; font-weight: 800; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             position: sticky; top: 0; z-index: 100;
         }
-        header i { cursor: pointer; font-size: 1.2rem; }
 
-        .home-actions { display: flex; justify-content: center; gap: 15px; padding: 20px; }
-        .btn-main {
-            flex: 1; max-width: 150px; height: 55px; border: none; border-radius: 12px;
-            color: white; font-weight: bold; display: flex; align-items: center; 
-            justify-content: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        .btn-rev { background: var(--revenue-green); }
-        .btn-exp { background: var(--expense-red); }
-
-        .summary-card { 
-            background: white; margin: 0 20px 20px; padding: 20px; border-radius: 15px; 
-            text-align: center; border: 1px solid #eee;
-        }
-        .summary-card b { font-size: 1.3rem; display: block; margin-top: 5px; }
-
-        .list-container { flex: 1; background: white; border-radius: 25px 25px 0 0; padding: 10px 0; }
-        .list-header { text-align: center; padding: 10px; color: #888; font-size: 0.8rem; font-weight: bold; }
-        .list-item { 
-            display: flex; justify-content: space-between; align-items: center; 
-            padding: 15px 20px; border-bottom: 1px solid #f5f5f5; cursor: pointer;
-        }
-
+        /* Sidebar */
         .overlay { display: none; position: fixed; inset: 0; background: var(--overlay-dark); z-index: 999; backdrop-filter: blur(2px); }
-        .modal { 
-            display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            background: white; width: 90%; max-width: 400px; padding: 25px; border-radius: 20px; 
-            z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        .modal-field { 
-            width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; 
-            margin-bottom: 12px; font-size: 1rem; outline: none; background: #fff;
-        }
-        .btn-save { 
-            width: 100%; padding: 15px; border: none; border-radius: 10px; 
-            font-weight: bold; font-size: 1rem; cursor: pointer; margin-top: 5px;
-            background: var(--revenue-green); color: white;
-        }
-
         .sidebar { height: 100%; width: 0; position: fixed; z-index: 1100; top: 0; left: 0; background: var(--sidebar-yellow); overflow-x: hidden; transition: 0.3s; padding-top: 50px; }
-        .menu-item { padding: 15px 25px; display: flex; align-items: center; gap: 15px; font-weight: 600; cursor: pointer; color: #000; }
+        .menu-item { padding: 15px 25px; display: flex; align-items: center; gap: 15px; font-weight: 600; cursor: pointer; color: #000; border-bottom: 1px solid rgba(0,0,0,0.05); }
 
-        .receipt-content { padding: 20px; }
-        .receipt-container { max-width: 450px; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin: auto; }
-        .receipt-section-title { font-size: 11px; color: #7f8c8d; font-weight: bold; margin: 15px 0 8px; text-transform: uppercase; letter-spacing: 1px; }
+        /* Estilos Comuns */
+        .content-padding { padding: 20px; }
+        .modal-field { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; margin-bottom: 12px; font-size: 1rem; outline: none; background: #fff; color: #333; }
+        .btn-save { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; background: var(--revenue-green); color: white; cursor: pointer; }
+        .btn-delete { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; background: #eee; color: var(--expense-red); cursor: pointer; margin-top: 10px; }
+        .summary-card { background: white; margin-bottom: 20px; padding: 20px; border-radius: 15px; text-align: center; border: 1px solid #eee; }
+        .list-item { background: white; display: flex; justify-content: space-between; align-items: center; padding: 15px; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer; }
         
-        .receipt-stack { display: flex; flex-direction: column; }
-        #r_valor { 
-            font-size: 1.3rem; 
-            font-weight: bold; 
-            color: var(--revenue-green); 
-            border: 2px solid var(--revenue-green);
-            background: #f0fdf4;
+        /* Modais */
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; width: 95%; max-width: 400px; padding: 20px; border-radius: 20px; z-index: 1000; box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-height: 90vh; overflow-y: auto; }
+        label { display: block; font-size: 11px; font-weight: bold; color: #777; margin-bottom: 4px; text-transform: uppercase; }
+
+        .receipt-container { max-width: 450px; background: white; padding: 20px; border-radius: 15px; margin: auto; }
+        .receipt-section-title { font-size: 11px; color: #7f8c8d; font-weight: bold; margin: 15px 0 8px; text-transform: uppercase; letter-spacing: 1px; }
+        .recibo-preview { border: 2px solid #eee; padding: 20px; border-radius: 10px; background: #fff; }
+        .recibo-header { background: var(--receipt-dark); color: var(--primary-yellow); margin: -20px -20px 20px -20px; padding: 15px; text-align: center; font-weight: bold; }
+        .info-row { margin-bottom: 8px; border-bottom: 1px dotted #eee; padding-bottom: 4px; font-size: 14px; }
+        .info-label { font-weight: bold; color: #7f8c8d; font-size: 11px; display: block; text-transform: uppercase; }
+        .valor-box { background: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px; border: 2px dashed var(--revenue-green); }
+
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        .summary-item { display: flex; flex-direction: column; font-size: 14px; }
+        .summary-val { font-weight: bold; font-size: 16px; }
+
+        .backup-code-area { 
+            background: #f0f0f0; 
+            padding: 10px; 
+            border-radius: 8px; 
+            font-family: monospace; 
+            font-size: 10px; 
+            word-break: break-all; 
+            max-height: 150px; 
+            overflow-y: auto; 
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            user-select: all;
         }
 
-        .btn-receipt-primary { background-color: var(--receipt-dark); color: white; margin-top: 20px; display: block; width: 100%; padding: 15px; border-radius: 8px; border: none; font-weight: bold; }
-        .recibo-preview { border: 2px solid #eee; padding: 20px; border-radius: 10px; background: #fff; margin-top: 10px; }
-        .recibo-header { background: var(--receipt-dark); color: var(--primary-yellow); margin: -20px -20px 20px -20px; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; }
-        .info-row { margin-bottom: 10px; border-bottom: 1px dotted #eee; padding-bottom: 5px; font-size: 14px; }
-        .info-label { font-weight: bold; color: #7f8c8d; font-size: 11px; display: block; text-transform: uppercase; }
-        .valor-box { background: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; margin-top: 20px; border: 2px dashed var(--revenue-green); cursor: pointer; }
-        .valor-num { font-size: 24px; font-weight: 800; color: var(--revenue-green); display: block; }
-        .edit-link { text-align: center; font-size: 12px; color: #3498db; cursor: pointer; margin-bottom: 15px; display: block; text-decoration: underline; }
+        /* Estilo do Popup de Alerta */
+        .alert-popup { text-align: center; }
+        .alert-icon { font-size: 50px; margin-bottom: 15px; }
+        .alert-item { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid var(--primary-yellow); text-align: left; }
     </style>
 </head>
 <body>
 
     <div id="overlay" class="overlay" onclick="closeAllPopups()"></div>
 
+    <!-- MENU LATERAL -->
     <div id="sidebar" class="sidebar">
         <div class="menu-item" onclick="showView('home-view')"><i class="fas fa-home"></i> Início</div>
-        <div class="menu-item" onclick="showView('receipt-view')"><i class="fas fa-file-invoice"></i> Recibo</div>
+        <div class="menu-item" onclick="showView('receipt-view')"><i class="fas fa-file-invoice"></i> Gerar Recibo</div>
         <div class="menu-item" onclick="showView('scheduled-view')"><i class="fas fa-calendar-alt"></i> Agendamentos</div>
         <div class="menu-item" onclick="showView('payable-view')"><i class="fas fa-file-invoice-dollar"></i> Contas a Pagar</div>
+        <div style="margin-top: 20px; border-top: 2px solid rgba(0,0,0,0.1);"></div>
+        <div class="menu-item" onclick="openExportModal()"><i class="fas fa-code"></i> Gerar Código Backup</div>
+        <div class="menu-item" onclick="openImportModal()"><i class="fas fa-upload"></i> Restaurar via Código</div>
     </div>
 
+    <!-- INÍCIO -->
     <div id="home-view" class="view">
-        <header>
-            <i class="fas fa-bars" onclick="openNav()"></i>
-            <span>GAT GESTÃO</span>
-            <div style="width:24px"></div>
-        </header>
-        <div class="home-actions">
-            <button class="btn-main btn-exp" onclick="prepareAdd('Despesa')"><i class="fas fa-minus"></i> DESPESA</button>
-            <button class="btn-main btn-rev" onclick="prepareAdd('Receita')"><i class="fas fa-plus"></i> RECEITA</button>
-        </div>
-        <div id="resumo-home" class="summary-card"></div>
-        <div class="list-container">
-            <div class="list-header">LANÇAMENTOS DE HOJE</div>
+        <header><i class="fas fa-bars" onclick="openNav()"></i><span>GAT GESTÃO</span><div style="width:24px"></div></header>
+        <div class="content-padding">
+            <div style="display:flex; gap:10px; margin-bottom:20px">
+                <button class="btn-save" style="background:var(--expense-red)" onclick="prepareAdd('Despesa')">- DESPESA</button>
+                <button class="btn-save" onclick="prepareAdd('Receita')">+ RECEITA</button>
+            </div>
+            <div id="resumo-home" class="summary-card"></div>
             <div id="list-hoje"></div>
         </div>
     </div>
 
+    <!-- VIEW RECIBO -->
     <div id="receipt-view" class="view hidden">
-        <header>
-            <i class="fas fa-arrow-left" onclick="showView('home-view')"></i>
-            <span>GERAR RECIBO</span>
-            <div style="width:24px"></div>
-        </header>
-        
-        <div class="receipt-content">
+        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>RECIBO PRO</span><div style="width:24px"></div></header>
+        <div class="content-padding">
             <div class="receipt-container">
-                <div id="receipt-step-0">
-                    <h2 style="text-align:center">Configurar Motorista</h2>
-                    <input type="text" id="reg_motorista" class="modal-field" placeholder="Nome do Motorista">
-                    <input type="tel" id="reg_tel" class="modal-field" placeholder="Telefone" inputmode="numeric">
-                    <div style="display:flex; gap:10px">
-                        <input type="text" id="reg_placa" class="modal-field" placeholder="Placa" maxlength="7">
-                        <input type="tel" id="reg_doc" class="modal-field" placeholder="CPF/CNPJ" inputmode="numeric">
-                    </div>
-                    <button class="btn-save" onclick="salvarCadastroMotorista()">Salvar Cadastro</button>
+                <div id="receipt-step-0" class="hidden">
+                    <div class="receipt-section-title">Dados do Profissional</div>
+                    <input type="text" id="reg_motorista" class="modal-field" placeholder="Nome Completo">
+                    <input type="tel" id="reg_tel" class="modal-field" placeholder="Telefone">
+                    <input type="tel" id="reg_documento" class="modal-field" placeholder="CPF/CNPJ">
+                    <input type="text" id="reg_placa" class="modal-field" placeholder="Placa">
+                    <button class="btn-save" onclick="salvarCadastroMotorista()">SALVAR</button>
                 </div>
-
-                <div id="receipt-step-1" class="hidden">
-                    <span class="edit-link" onclick="voltarParaCadastroMotorista()">📝 Alterar Meus Dados</span>
+                <div id="receipt-step-1">
                     <div class="receipt-section-title">Dados da Corrida</div>
+                    <input type="text" id="r_cliente" class="modal-field" placeholder="Cliente">
                     <input type="text" id="r_origem" class="modal-field" placeholder="Origem">
                     <input type="text" id="r_destino" class="modal-field" placeholder="Destino">
-                    
-                    <div class="receipt-stack">
-                        <input type="datetime-local" id="r_data" class="modal-field">
-                        <input type="tel" id="r_valor" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)" inputmode="numeric">
-                    </div>
-
-                    <div class="receipt-section-title">Dados do Cliente</div>
-                    <input type="text" id="r_cliente" class="modal-field" placeholder="Nome do Cliente">
-                    <input type="tel" id="r_tel_cliente" class="modal-field" placeholder="Telefone Cliente" inputmode="numeric">
-                    <button class="btn-receipt-primary" onclick="gerarReciboFinal()">GERAR RECIBO</button>
+                    <input type="tel" id="r_valor" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)">
+                    <button class="btn-save" onclick="gerarReciboFinal()">GERAR</button>
                 </div>
-
                 <div id="receipt-step-2" class="hidden">
-                    <div class="recibo-preview" id="print-area">
-                        <div class="recibo-header">RECIBO DE TÁXI / APP</div>
+                    <div class="recibo-preview">
+                        <div class="recibo-header">RECIBO</div>
                         <div class="info-row"><span class="info-label">Motorista</span><span id="p_motorista"></span></div>
-                        <div class="info-row"><span class="info-label">Documento / Placa</span><span id="p_doc_placa"></span></div>
-                        <div style="height:10px"></div>
-                        <div class="info-row"><span class="info-label">Passageiro</span><span id="p_cliente"></span></div>
-                        <div class="info-row"><span class="info-label">Origem</span><span id="p_origem"></span></div>
-                        <div class="info-row"><span class="info-label">Destino</span><span id="p_destino"></span></div>
-                        <div class="info-row"><span class="info-label">Data e Hora</span><span id="p_data"></span></div>
-                        <div class="valor-box" onclick="showView('receipt-view')">
-                            <span class="info-label">Valor Total</span>
-                            <span class="valor-num" id="p_valor"></span>
-                        </div>
+                        <div class="info-row"><span class="info-label">Cliente</span><span id="p_cliente"></span></div>
+                        <div class="info-row"><span class="info-label">Valor</span><span id="p_valor_txt"></span></div>
+                        <div class="valor-box"><span id="p_valor" style="font-size:22px; font-weight:bold; color:var(--revenue-green)"></span></div>
+                        <button class="btn-delete" onclick="checkDriver()">NOVO RECIBO</button>
                     </div>
-                    <p style="text-align:center; font-size:11px; color:#888; margin-top:15px">Tire um print para enviar ao cliente.<br>Clique no valor para novo recibo.</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="payable-view" class="view hidden"><header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>CONTAS</span></header></div>
-    <div id="scheduled-view" class="view hidden"><header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>AGENDAMENTOS</span></header></div>
+    <!-- AGENDAMENTOS -->
+    <div id="scheduled-view" class="view hidden">
+        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>AGENDAMENTOS</span><div style="width:24px"></div></header>
+        <div class="content-padding">
+            <button class="btn-save" style="background:var(--scheduled-blue); margin-bottom:20px" onclick="prepareAddAgenda()">NOVO AGENDAMENTO</button>
+            <div id="list-agenda"></div>
+        </div>
+    </div>
 
+    <!-- CONTAS A PAGAR -->
+    <div id="payable-view" class="view hidden">
+        <header>
+            <i class="fas fa-arrow-left" onclick="showView('home-view')"></i>
+            <span>CONTAS A PAGAR</span>
+            <i class="fas fa-plus" style="font-size: 20px; cursor: pointer;" onclick="prepareAddConta()"></i>
+        </header>
+        <div class="content-padding">
+            <div id="list-contas"></div>
+        </div>
+    </div>
+
+    <!-- MODAL AGENDAMENTO -->
+    <div id="modal-agenda" class="modal">
+        <h3 id="agenda-title" style="margin-top:0">Agendar Corrida</h3>
+        <input type="hidden" id="a-id">
+        <label>Nome do Cliente</label>
+        <input type="text" id="a-cliente" class="modal-field" placeholder="Nome">
+        <label>Telefone</label>
+        <input type="tel" id="a-tel" class="modal-field" placeholder="Telefone">
+        <label>Origem</label>
+        <input type="text" id="a-origem" class="modal-field" placeholder="Ponto de partida">
+        <label>Destino</label>
+        <input type="text" id="a-destino" class="modal-field" placeholder="Ponto de chegada">
+        <label>Data e Hora</label>
+        <input type="datetime-local" id="a-data" class="modal-field">
+        <label>Observações</label>
+        <textarea id="a-obs" class="modal-field" style="height: 80px; resize: none;" placeholder="Detalhes da corrida..."></textarea>
+        <button class="btn-save" style="background:var(--scheduled-blue)" onclick="saveAgenda()">SALVAR</button>
+        <button id="btn-delete-agenda" class="btn-delete" onclick="openConfirmDeleteAgenda()">EXCLUIR</button>
+    </div>
+
+    <!-- MODAL CONTAS A PAGAR -->
+    <div id="modal-contas" class="modal">
+        <h3>Conta a Pagar</h3>
+        <input type="hidden" id="c-id">
+        <label>Descrição</label>
+        <input type="text" id="c-desc" class="modal-field" placeholder="Ex: Aluguel, Internet...">
+        <label>Valor</label>
+        <input type="tel" id="c-val" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)">
+        <label>Vencimento</label>
+        <input type="date" id="c-venc" class="modal-field">
+        <button class="btn-save" style="background:var(--payable-orange)" onclick="saveConta()">SALVAR</button>
+        <button id="btn-delete-conta" class="btn-delete" onclick="openConfirmDeleteConta()">EXCLUIR</button>
+    </div>
+
+    <!-- MODAL CONFIRMAÇÃO -->
+    <div id="modal-confirm" class="modal">
+        <div style="text-align:center">
+            <i class="fas fa-exclamation-circle" style="font-size:50px; color:var(--expense-red)"></i>
+            <h3>Confirmar Exclusão?</h3>
+            <div style="display:flex; gap:10px; margin-top:20px">
+                <button class="btn-delete" style="margin:0; background:#eee; flex:1" onclick="closeModal('modal-confirm')">NÃO</button>
+                <button id="confirm-delete-btn" class="btn-save" style="background:var(--expense-red); flex:1">SIM, EXCLUIR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL LANÇAMENTO FINANCEIRO -->
     <div id="modal-entry" class="modal">
-        <h3 id="entry-title" style="margin:0 0 15px">Lançamento</h3>
-        <input type="tel" id="v-val" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)" style="font-size:1.5rem; text-align:center; font-weight:bold">
+        <h3 id="entry-title-text">Lançamento</h3>
+        <input type="hidden" id="v-id">
+        <label>Valor</label>
+        <input type="tel" id="v-val" class="modal-field" placeholder="R$ 0,00" oninput="formatMoeda(this)">
+        <label>Categoria</label>
         <select id="v-cat" class="modal-field"></select>
+        <label>Observação</label>
+        <input type="text" id="v-obs-entry" class="modal-field" placeholder="Obs">
+        <label>Data</label>
         <input type="date" id="v-data" class="modal-field">
         <button class="btn-save" onclick="saveEntry()">SALVAR</button>
-        <button class="btn-save" style="background:#eee; color:#333" onclick="closeAllPopups()">CANCELAR</button>
+        <button id="btn-delete-entry" class="btn-delete" onclick="openConfirmDeleteEntry()">EXCLUIR</button>
+    </div>
+
+    <!-- MODAL EXPORTAR BACKUP -->
+    <div id="modal-export-backup" class="modal">
+        <div style="text-align:center">
+            <i class="fas fa-shield-alt" style="font-size:40px; color:var(--revenue-green)"></i>
+            <h3 style="margin: 10px 0">Código de Segurança</h3>
+            <p style="font-size:12px; color:#666">Copie o código abaixo e guarde-o. Ele contém todos os seus dados salvos.</p>
+            <div id="backup-code-display" class="backup-code-area" onclick="copyBackupCode()"></div>
+            <button class="btn-save" onclick="closeAllPopups()">CONCLUÍDO</button>
+        </div>
+    </div>
+
+    <!-- MODAL IMPORTAR BACKUP -->
+    <div id="modal-import-backup" class="modal">
+        <div style="text-align:center">
+            <i class="fas fa-file-import" style="font-size:40px; color:var(--scheduled-blue)"></i>
+            <h3 style="margin: 10px 0">Restaurar Dados</h3>
+            <p style="font-size:12px; color:#666">Cole o código de backup abaixo para restaurar as informações.</p>
+            <textarea id="import-code-input" class="modal-field" style="height:120px; font-family:monospace; font-size:10px" placeholder="Cole o código aqui..."></textarea>
+            <button class="btn-save" style="background:var(--scheduled-blue)" onclick="processImportCode()">RESTAURAR AGORA</button>
+            <button class="btn-delete" onclick="closeAllPopups()">CANCELAR</button>
+        </div>
+    </div>
+
+    <!-- MODAL ALERTA DE HOJE -->
+    <div id="modal-daily-alert" class="modal">
+        <div class="alert-popup">
+            <div class="alert-icon"><i class="fas fa-bell" style="color: var(--primary-yellow)"></i></div>
+            <h3 style="margin-bottom: 5px;">Atenção para Hoje!</h3>
+            <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Você possui compromissos para este dia:</p>
+            <div id="daily-alert-list"></div>
+            <button class="btn-save" style="background: var(--receipt-dark); margin-top: 15px;" onclick="closeAllPopups()">ENTENDI</button>
+        </div>
     </div>
 
     <script>
         let db = JSON.parse(localStorage.getItem('gat_db')) || [];
+        let agenda = JSON.parse(localStorage.getItem('gat_agenda')) || [];
+        let contas = JSON.parse(localStorage.getItem('gat_contas')) || [];
         let driverData = JSON.parse(localStorage.getItem('gat_driver')) || null;
-        let curType = 'Receita';
+        let idParaExcluir = null;
 
         function openNav() { document.getElementById("sidebar").style.width = "280px"; document.getElementById("overlay").style.display = "block"; }
+        function openModal(id) { document.getElementById(id).style.display = 'block'; document.getElementById("overlay").style.display = "block"; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; if(id !== 'modal-confirm') document.getElementById("overlay").style.display = "none"; }
+        
         function closeAllPopups() {
             document.getElementById("sidebar").style.width = "0";
             document.getElementById("overlay").style.display = "none";
@@ -212,7 +282,8 @@
             document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
             document.getElementById(viewId).classList.remove('hidden');
             if(viewId === 'home-view') updateHome();
-            if(viewId === 'receipt-view') checkDriverStatus();
+            if(viewId === 'scheduled-view') updateAgenda();
+            if(viewId === 'payable-view') updateContas();
             closeAllPopups();
         }
 
@@ -223,103 +294,321 @@
             i.value = "R$ " + v;
         }
 
-        function checkDriverStatus() {
-            if(driverData) {
-                document.getElementById('receipt-step-0').classList.add('hidden');
-                document.getElementById('receipt-step-1').classList.remove('hidden');
-                document.getElementById('receipt-step-2').classList.add('hidden');
-                // Mantém a data atualizada sempre que entrar na tela de preenchimento
-                const agora = new Date();
-                agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
-                document.getElementById('r_data').value = agora.toISOString().slice(0,16);
-            } else {
-                document.getElementById('receipt-step-0').classList.remove('hidden');
-                document.getElementById('receipt-step-1').classList.add('hidden');
+        // --- LÓGICA DE ALERTAS DIÁRIOS ---
+        function checkDailyAlerts() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const ultimaVez = localStorage.getItem('gat_last_alert_date');
+
+            if (ultimaVez === hoje) return; 
+
+            const agendamentosHoje = agenda.filter(a => a.data.split('T')[0] === hoje);
+            const contasHoje = contas.filter(c => c.venc === hoje);
+
+            if (agendamentosHoje.length > 0 || contasHoje.length > 0) {
+                const listContainer = document.getElementById('daily-alert-list');
+                listContainer.innerHTML = '';
+
+                agendamentosHoje.forEach(a => {
+                    listContainer.innerHTML += `
+                        <div class="alert-item">
+                            <i class="fas fa-calendar-check" style="color:var(--scheduled-blue)"></i> 
+                            <b>Corrida:</b> ${a.cliente} às ${a.data.split('T')[1]}
+                        </div>`;
+                });
+
+                contasHoje.forEach(c => {
+                    listContainer.innerHTML += `
+                        <div class="alert-item">
+                            <i class="fas fa-exclamation-triangle" style="color:var(--payable-orange)"></i> 
+                            <b>Conta:</b> ${c.desc} (${c.val})
+                        </div>`;
+                });
+
+                openModal('modal-daily-alert');
+                localStorage.setItem('gat_last_alert_date', hoje);
             }
         }
 
+        // --- LÓGICA DE CONTAS A PAGAR ---
+        function updateContas() {
+            const container = document.getElementById('list-contas');
+            container.innerHTML = contas.length ? contas.map(c => `
+                <div class="list-item" onclick="editConta(${c.id})">
+                    <div>
+                        <strong>${c.desc}</strong><br>
+                        <small style="color:var(--expense-red)">Vence: ${c.venc ? c.venc.split('-').reverse().join('/') : '--/--/----'}</small>
+                    </div>
+                    <b style="color:var(--expense-red)">${c.val}</b>
+                </div>`).join('') : '<p style="text-align:center; color:#999">Nenhuma conta pendente.</p>';
+        }
+
+        function prepareAddConta() {
+            document.getElementById('c-id').value = "";
+            document.getElementById('c-desc').value = "";
+            document.getElementById('c-val').value = "";
+            document.getElementById('c-venc').value = "";
+            document.getElementById('btn-delete-conta').style.display = 'none';
+            openModal('modal-contas');
+        }
+
+        function editConta(id) {
+            const item = contas.find(x => x.id === id);
+            document.getElementById('c-id').value = item.id;
+            document.getElementById('c-desc').value = item.desc;
+            document.getElementById('c-val').value = item.val;
+            document.getElementById('c-venc').value = item.venc;
+            document.getElementById('btn-delete-conta').style.display = 'block';
+            openModal('modal-contas');
+        }
+
+        function saveConta() {
+            const id = document.getElementById('c-id').value;
+            const obj = {
+                id: id ? parseInt(id) : Date.now(),
+                desc: document.getElementById('c-desc').value,
+                val: document.getElementById('c-val').value,
+                venc: document.getElementById('c-venc').value
+            };
+            if(!obj.desc || !obj.val) return alert("Preencha Descrição e Valor!");
+            if(id) contas = contas.map(x => x.id === parseInt(id) ? obj : x);
+            else contas.push(obj);
+            localStorage.setItem('gat_contas', JSON.stringify(contas));
+            closeAllPopups(); updateContas();
+        }
+
+        function openConfirmDeleteConta() {
+            idParaExcluir = document.getElementById('c-id').value;
+            if(!idParaExcluir) return;
+            document.getElementById('confirm-delete-btn').onclick = function() {
+                contas = contas.filter(x => x.id !== parseInt(idParaExcluir));
+                localStorage.setItem('gat_contas', JSON.stringify(contas));
+                closeAllPopups();
+                updateContas();
+            };
+            openModal('modal-confirm');
+        }
+
+        // --- LÓGICA DE AGENDAMENTO ---
+        function updateAgenda() {
+            const container = document.getElementById('list-agenda');
+            container.innerHTML = agenda.length ? agenda.map(a => `
+                <div class="list-item" onclick="editAgenda(${a.id})">
+                    <div>
+                        <strong>${a.cliente}</strong><br>
+                        <small style="color:var(--scheduled-blue)">${a.data.split('T')[0].split('-').reverse().join('/')} ${a.data.split('T')[1]}</small><br>
+                        <small>${a.origem || 'Sem origem'} → ${a.destino || 'Sem destino'}</small>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:#ccc"></i>
+                </div>`).join('') : '<p style="text-align:center; color:#999">Nenhum agendamento.</p>';
+        }
+
+        function prepareAddAgenda() {
+            document.getElementById('a-id').value = "";
+            document.getElementById('a-cliente').value = "";
+            document.getElementById('a-tel').value = "";
+            document.getElementById('a-origem').value = "";
+            document.getElementById('a-destino').value = "";
+            document.getElementById('a-data').value = "";
+            document.getElementById('a-obs').value = "";
+            document.getElementById('btn-delete-agenda').style.display = 'none';
+            openModal('modal-agenda');
+        }
+
+        function editAgenda(id) {
+            const item = agenda.find(x => x.id === id);
+            document.getElementById('a-id').value = item.id;
+            document.getElementById('a-cliente').value = item.cliente;
+            document.getElementById('a-tel').value = item.tel || "";
+            document.getElementById('a-origem').value = item.origem || "";
+            document.getElementById('a-destino').value = item.destino || "";
+            document.getElementById('a-data').value = item.data;
+            document.getElementById('a-obs').value = item.obs || "";
+            document.getElementById('btn-delete-agenda').style.display = 'block';
+            openModal('modal-agenda');
+        }
+
+        function saveAgenda() {
+            const id = document.getElementById('a-id').value;
+            const obj = {
+                id: id ? parseInt(id) : Date.now(),
+                cliente: document.getElementById('a-cliente').value,
+                tel: document.getElementById('a-tel').value,
+                origem: document.getElementById('a-origem').value,
+                destino: document.getElementById('a-destino').value,
+                data: document.getElementById('a-data').value,
+                obs: document.getElementById('a-obs').value
+            };
+            if(!obj.cliente || !obj.data) return alert("Preencha Nome e Data!");
+            if(id) agenda = agenda.map(x => x.id === parseInt(id) ? obj : x);
+            else agenda.push(obj);
+            localStorage.setItem('gat_agenda', JSON.stringify(agenda));
+            closeAllPopups(); updateAgenda();
+        }
+
+        function openConfirmDeleteAgenda() {
+            idParaExcluir = document.getElementById('a-id').value;
+            if(!idParaExcluir) return;
+            document.getElementById('confirm-delete-btn').onclick = function() {
+                agenda = agenda.filter(x => x.id !== parseInt(idParaExcluir));
+                localStorage.setItem('gat_agenda', JSON.stringify(agenda));
+                closeAllPopups();
+                updateAgenda();
+            };
+            openModal('modal-confirm');
+        }
+
+        // --- FINANCEIRO HOME ---
+        function updateHome() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const items = db.filter(e => e.data === hoje);
+            let r = 0, d = 0;
+            
+            items.forEach(e => {
+                let v = parseFloat(e.val.replace(/[R$\s.]/g, "").replace(",", "."));
+                if(isNaN(v)) v = 0;
+                e.tipo === 'Receita' ? r += v : d += v;
+            });
+
+            document.getElementById('resumo-home').innerHTML = `
+                <div style="font-size:24px; color:${(r-d) >= 0 ? 'var(--revenue-green)' : 'var(--expense-red)'}"><b>R$ ${(r-d).toFixed(2).replace('.',',')}</b></div>
+                <div class="summary-grid">
+                    <div class="summary-item"><span>Receitas</span><span class="summary-val">R$ ${r.toFixed(2).replace('.',',')}</span></div>
+                    <div class="summary-item"><span>Despesas</span><span class="summary-val">R$ ${d.toFixed(2).replace('.',',')}</span></div>
+                </div>`;
+
+            document.getElementById('list-hoje').innerHTML = items.length ? items.map(e => `
+                <div class="list-item" onclick="editEntry(${e.id})">
+                    <span style="font-weight:600">${e.cat}</span>
+                    <b style="color: ${e.tipo === 'Receita' ? 'var(--revenue-green)' : 'var(--expense-red)'}">${e.val}</b>
+                </div>`).join('') : '<p style="text-align:center; color:#999">Nenhum lançamento hoje.</p>';
+        }
+
+        function prepareAdd(type) {
+            document.getElementById('v-id').value = "";
+            document.getElementById('entry-title-text').innerText = type;
+            document.getElementById('v-cat').innerHTML = (type === 'Receita' ? ['Uber', '99', 'Particular'] : ['Combustível', 'Manutenção', 'Alimentação']).map(c => `<option>${c}</option>`).join('');
+            document.getElementById('v-data').value = new Date().toISOString().split('T')[0];
+            document.getElementById('v-val').value = "";
+            document.getElementById('v-obs-entry').value = "";
+            document.getElementById('btn-delete-entry').style.display = 'none';
+            openModal('modal-entry');
+        }
+
+        function editEntry(id) {
+            const item = db.find(x => x.id === id);
+            document.getElementById('v-id').value = item.id;
+            document.getElementById('entry-title-text').innerText = item.tipo;
+            document.getElementById('v-cat').innerHTML = (item.tipo === 'Receita' ? ['Uber', '99', 'Particular'] : ['Combustível', 'Manutenção', 'Alimentação']).map(c => `<option ${c === item.cat ? 'selected' : ''}>${c}</option>`).join('');
+            document.getElementById('v-data').value = item.data;
+            document.getElementById('v-val').value = item.val;
+            document.getElementById('v-obs-entry').value = item.obs || "";
+            document.getElementById('btn-delete-entry').style.display = 'block';
+            openModal('modal-entry');
+        }
+
+        function saveEntry() {
+            const id = document.getElementById('v-id').value;
+            const type = document.getElementById('entry-title-text').innerText;
+            const obj = {
+                id: id ? parseInt(id) : Date.now(),
+                tipo: type,
+                val: document.getElementById('v-val').value,
+                cat: document.getElementById('v-cat').value,
+                data: document.getElementById('v-data').value,
+                obs: document.getElementById('v-obs-entry').value
+            };
+            
+            if(!obj.val) return alert("Preencha o valor!");
+
+            if(id) db = db.map(x => x.id === parseInt(id) ? obj : x);
+            else db.push(obj);
+
+            localStorage.setItem('gat_db', JSON.stringify(db));
+            closeAllPopups(); 
+            updateHome();
+        }
+
+        function openConfirmDeleteEntry() {
+            idParaExcluir = document.getElementById('v-id').value;
+            if(!idParaExcluir) return;
+            document.getElementById('confirm-delete-btn').onclick = function() {
+                db = db.filter(x => x.id !== parseInt(idParaExcluir));
+                localStorage.setItem('gat_db', JSON.stringify(db));
+                closeAllPopups();
+                updateHome();
+            };
+            openModal('modal-confirm');
+        }
+
+        // --- RECIBOS ---
+        function checkDriver() {
+            if(!driverData) {
+                document.getElementById('receipt-step-0').classList.remove('hidden');
+                document.getElementById('receipt-step-1').classList.add('hidden');
+            } else {
+                document.getElementById('receipt-step-0').classList.add('hidden');
+                document.getElementById('receipt-step-1').classList.remove('hidden');
+            }
+            document.getElementById('receipt-step-2').classList.add('hidden');
+        }
+
         function salvarCadastroMotorista() {
-            const motorista = document.getElementById('reg_motorista').value;
-            const tel = document.getElementById('reg_tel').value;
-            if(!motorista || !tel) return alert("Nome e Telefone são obrigatórios!");
-            driverData = { motorista, tel, placa: document.getElementById('reg_placa').value, doc: document.getElementById('reg_doc').value };
+            const nome = document.getElementById('reg_motorista').value;
+            if(!nome) return alert("Digite seu nome!");
+            driverData = { motorista: nome };
             localStorage.setItem('gat_driver', JSON.stringify(driverData));
-            checkDriverStatus();
+            checkDriver();
         }
 
         function gerarReciboFinal() {
-            const origem = document.getElementById('r_origem').value;
-            const destino = document.getElementById('r_destino').value;
-            const valor = document.getElementById('r_valor').value;
-            const cliente = document.getElementById('r_cliente').value;
-            const telCliente = document.getElementById('r_tel_cliente').value;
-            const dataRaw = document.getElementById('r_data').value;
-
-            if(!origem || !destino || !valor || valor === "R$ 0,00") return alert("Preencha os dados da corrida!");
-
-            // Alimenta o Preview do Recibo
-            document.getElementById('p_motorista').innerText = driverData.motorista + " (" + driverData.tel + ")";
-            document.getElementById('p_doc_placa').innerText = "Doc: " + (driverData.doc || "---") + " | Placa: " + (driverData.placa || "---");
-            document.getElementById('p_cliente').innerText = cliente || "Não informado";
-            document.getElementById('p_origem').innerText = origem;
-            document.getElementById('p_destino').innerText = destino;
-            document.getElementById('p_valor').innerText = valor;
-            
-            const d = new Date(dataRaw);
-            document.getElementById('p_data').innerText = d.toLocaleDateString('pt-BR') + " " + d.toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-
-            // --- ALTERAÇÃO SOLICITADA: LIMPEZA DOS INPUTS ---
-            document.getElementById('r_origem').value = "";
-            document.getElementById('r_destino').value = "";
-            document.getElementById('r_valor').value = "";
-            document.getElementById('r_cliente').value = "";
-            document.getElementById('r_tel_cliente').value = "";
-            
-            // Reseta a data para o momento atual para o próximo recibo
-            const agora = new Date();
-            agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset());
-            document.getElementById('r_data').value = agora.toISOString().slice(0,16);
-            // ------------------------------------------------
-
-            // Troca para a tela de visualização
+            if(!document.getElementById('r_cliente').value || !document.getElementById('r_valor').value) return alert("Preencha Cliente e Valor!");
+            document.getElementById('p_motorista').innerText = driverData.motorista;
+            document.getElementById('p_cliente').innerText = document.getElementById('r_cliente').value;
+            document.getElementById('p_valor').innerText = document.getElementById('r_valor').value;
             document.getElementById('receipt-step-1').classList.add('hidden');
             document.getElementById('receipt-step-2').classList.remove('hidden');
         }
 
-        function voltarParaCadastroMotorista() {
-            document.getElementById('receipt-step-1').classList.add('hidden');
-            document.getElementById('receipt-step-0').classList.remove('hidden');
+        // --- BACKUP ---
+        function openExportModal() {
+            closeAllPopups();
+            const fullData = { db, agenda, contas, driverData };
+            const code = btoa(unescape(encodeURIComponent(JSON.stringify(fullData))));
+            document.getElementById('backup-code-display').innerText = code;
+            openModal('modal-export-backup');
         }
 
-        function updateHome() {
-            const hoje = new Date().toISOString().split('T')[0];
-            const items = db.filter(e => e.data === hoje);
-            const container = document.getElementById('list-hoje');
-            let r = 0, d = 0;
-            container.innerHTML = items.map(e => {
-                let v = parseFloat(e.val.replace(/[R$\s.]/g, "").replace(",", "."));
-                e.tipo === 'Receita' ? r += v : d += v;
-                return `<div class="list-item"><div><strong>${e.cat}</strong></div><b style="color:${e.tipo==='Receita'?'var(--revenue-green)':'var(--expense-red)'}">${e.val}</b></div>`;
-            }).join('');
-            document.getElementById('resumo-home').innerHTML = `Saldo Hoje: <b>R$ ${(r-d).toFixed(2).replace('.',',')}</b>`;
+        function copyBackupCode() {
+            const code = document.getElementById('backup-code-display').innerText;
+            navigator.clipboard.writeText(code);
+            alert("Código copiado com sucesso!");
         }
 
-        function prepareAdd(type) {
-            curType = type;
-            document.getElementById('v-cat').innerHTML = (type === 'Receita' ? ['Uber', '99', 'Particular'] : ['Combustível', 'Manutenção']).map(c => `<option>${c}</option>`).join('');
-            document.getElementById('modal-entry').style.display = 'block';
-            document.getElementById('overlay').style.display = 'block';
+        function openImportModal() {
+            closeAllPopups();
+            document.getElementById('import-code-input').value = "";
+            openModal('modal-import-backup');
         }
 
-        function saveEntry() {
-            const val = document.getElementById('v-val').value;
-            if(!val || val === "R$ 0,00") return;
-            db.push({ id: Date.now(), tipo: curType, val, cat: document.getElementById('v-cat').value, data: new Date().toISOString().split('T')[0] });
-            localStorage.setItem('gat_db', JSON.stringify(db));
-            closeAllPopups(); updateHome();
+        function processImportCode() {
+            const code = document.getElementById('import-code-input').value.trim();
+            if(!code) return alert("Por favor, cole um código válido.");
+            try {
+                const decodedData = JSON.parse(decodeURIComponent(escape(atob(code))));
+                if(decodedData.db) localStorage.setItem('gat_db', JSON.stringify(decodedData.db));
+                if(decodedData.agenda) localStorage.setItem('gat_agenda', JSON.stringify(decodedData.agenda));
+                if(decodedData.contas) localStorage.setItem('gat_contas', JSON.stringify(decodedData.contas));
+                if(decodedData.driverData) localStorage.setItem('gat_driver', JSON.stringify(decodedData.driverData));
+                alert("Dados restaurados com sucesso!");
+                location.reload();
+            } catch(e) {
+                alert("Erro: O código colado é inválido.");
+            }
         }
 
+        // Inicialização
         updateHome();
+        setTimeout(checkDailyAlerts, 500);
     </script>
 </body>
 </html>
