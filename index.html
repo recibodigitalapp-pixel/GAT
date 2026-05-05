@@ -91,6 +91,10 @@
         <div class="menu-item" onclick="showView('receipt-view')"><i class="fas fa-file-invoice"></i> Gerar Recibo</div>
         <div class="menu-item" onclick="showView('scheduled-view')"><i class="fas fa-calendar-alt"></i> Agendamentos</div>
         <div class="menu-item" onclick="showView('payable-view')"><i class="fas fa-file-invoice-dollar"></i> Contas a Pagar</div>
+        
+        <div class="menu-item" onclick="openConfig('Receita')"><i class="fas fa-cog"></i> Config. de Receitas</div>
+        <div class="menu-item" onclick="openConfig('Despesa')"><i class="fas fa-cog"></i> Config. de Despesas</div>
+        
         <div style="margin-top: 20px; border-top: 2px solid rgba(0,0,0,0.1);"></div>
         <div class="menu-item" onclick="openExportModal()"><i class="fas fa-code"></i> Gerar Código Backup</div>
         <div class="menu-item" onclick="openImportModal()"><i class="fas fa-upload"></i> Restaurar via Código</div>
@@ -106,6 +110,15 @@
             </div>
             <div id="resumo-home" class="summary-card"></div>
             <div id="list-hoje"></div>
+        </div>
+    </div>
+
+    <!-- VIEW CONFIGURAÇÃO DE CATEGORIAS -->
+    <div id="config-view" class="view hidden">
+        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span id="config-title">CATEGORIAS</span><div style="width:24px"></div></header>
+        <div class="content-padding">
+            <button class="btn-save" id="btn-add-cat" style="margin-bottom: 20px;">ADICIONAR NOVA CATEGORIA</button>
+            <div id="list-categorias"></div>
         </div>
     </div>
 
@@ -165,6 +178,17 @@
         </div>
     </div>
 
+    <!-- MODAL NOVA CATEGORIA -->
+    <div id="modal-cat" class="modal">
+        <h3 id="cat-modal-title" style="margin-top:0">Nova Categoria</h3>
+        <label>Nome da Categoria</label>
+        <input type="text" id="new-cat-name" class="modal-field" placeholder="Ex: Manutenção, Bônus...">
+        <div style="display:flex; gap:10px; margin-top:10px">
+            <button class="btn-delete" style="margin:0; background:#eee; flex:1" onclick="closeModal('modal-cat')">CANCELAR</button>
+            <button class="btn-save" style="flex:1" onclick="saveNewCategory()">SALVAR</button>
+        </div>
+    </div>
+
     <!-- MODAL AGENDAMENTO -->
     <div id="modal-agenda" class="modal">
         <h3 id="agenda-title" style="margin-top:0">Agendar Corrida</h3>
@@ -203,7 +227,7 @@
     <div id="modal-confirm" class="modal">
         <div style="text-align:center">
             <i class="fas fa-exclamation-circle" style="font-size:50px; color:var(--expense-red)"></i>
-            <h3>Confirmar Exclusão?</h3>
+            <h3 id="confirm-msg">Confirmar Exclusão?</h3>
             <div style="display:flex; gap:10px; margin-top:20px">
                 <button class="btn-delete" style="margin:0; background:#eee; flex:1" onclick="closeModal('modal-confirm')">NÃO</button>
                 <button id="confirm-delete-btn" class="btn-save" style="background:var(--expense-red); flex:1">SIM, EXCLUIR</button>
@@ -250,23 +274,18 @@
         </div>
     </div>
 
-    <!-- MODAL ALERTA DE HOJE -->
-    <div id="modal-daily-alert" class="modal">
-        <div class="alert-popup">
-            <div class="alert-icon"><i class="fas fa-bell" style="color: var(--primary-yellow)"></i></div>
-            <h3 style="margin-bottom: 5px;">Atenção para Hoje!</h3>
-            <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Você possui compromissos para este dia:</p>
-            <div id="daily-alert-list"></div>
-            <button class="btn-save" style="background: var(--receipt-dark); margin-top: 15px;" onclick="closeAllPopups()">ENTENDI</button>
-        </div>
-    </div>
-
     <script>
         let db = JSON.parse(localStorage.getItem('gat_db')) || [];
         let agenda = JSON.parse(localStorage.getItem('gat_agenda')) || [];
         let contas = JSON.parse(localStorage.getItem('gat_contas')) || [];
         let driverData = JSON.parse(localStorage.getItem('gat_driver')) || null;
+        
+        // Categorias Padrão
+        let catReceita = JSON.parse(localStorage.getItem('gat_cat_receita')) || ['Uber', '99', 'Particular'];
+        let catDespesa = JSON.parse(localStorage.getItem('gat_cat_despesa')) || ['Combustível', 'Manutenção', 'Alimentação'];
+        
         let idParaExcluir = null;
+        let configAtual = 'Receita';
 
         function openNav() { document.getElementById("sidebar").style.width = "280px"; document.getElementById("overlay").style.display = "block"; }
         function openModal(id) { document.getElementById(id).style.display = 'block'; document.getElementById("overlay").style.display = "block"; }
@@ -294,39 +313,61 @@
             i.value = "R$ " + v;
         }
 
-        // --- LÓGICA DE ALERTAS DIÁRIOS ---
-        function checkDailyAlerts() {
-            const hoje = new Date().toISOString().split('T')[0];
-            const ultimaVez = localStorage.getItem('gat_last_alert_date');
+        // --- LÓGICA DE CONFIGURAÇÃO DE CATEGORIAS ---
+        function openConfig(tipo) {
+            configAtual = tipo;
+            document.getElementById('config-title').innerText = "Config. de " + tipo;
+            const btn = document.getElementById('btn-add-cat');
+            btn.style.background = tipo === 'Receita' ? 'var(--revenue-green)' : 'var(--expense-red)';
+            btn.onclick = () => {
+                document.getElementById('cat-modal-title').innerText = "Nova Cat. de " + tipo;
+                document.getElementById('new-cat-name').value = "";
+                openModal('modal-cat');
+            };
+            updateCatList();
+            showView('config-view');
+        }
 
-            if (ultimaVez === hoje) return; 
+        function updateCatList() {
+            const list = configAtual === 'Receita' ? catReceita : catDespesa;
+            const container = document.getElementById('list-categorias');
+            container.innerHTML = list.map((c, index) => `
+                <div class="list-item">
+                    <span>${c}</span>
+                    <i class="fas fa-trash-alt" style="color:var(--expense-red); padding:10px" onclick="confirmDeleteCat(${index})"></i>
+                </div>
+            `).join('');
+        }
 
-            const agendamentosHoje = agenda.filter(a => a.data.split('T')[0] === hoje);
-            const contasHoje = contas.filter(c => c.venc === hoje);
-
-            if (agendamentosHoje.length > 0 || contasHoje.length > 0) {
-                const listContainer = document.getElementById('daily-alert-list');
-                listContainer.innerHTML = '';
-
-                agendamentosHoje.forEach(a => {
-                    listContainer.innerHTML += `
-                        <div class="alert-item">
-                            <i class="fas fa-calendar-check" style="color:var(--scheduled-blue)"></i> 
-                            <b>Corrida:</b> ${a.cliente} às ${a.data.split('T')[1]}
-                        </div>`;
-                });
-
-                contasHoje.forEach(c => {
-                    listContainer.innerHTML += `
-                        <div class="alert-item">
-                            <i class="fas fa-exclamation-triangle" style="color:var(--payable-orange)"></i> 
-                            <b>Conta:</b> ${c.desc} (${c.val})
-                        </div>`;
-                });
-
-                openModal('modal-daily-alert');
-                localStorage.setItem('gat_last_alert_date', hoje);
+        function saveNewCategory() {
+            const name = document.getElementById('new-cat-name').value.trim();
+            if(!name) return alert("Digite o nome da categoria!");
+            if(configAtual === 'Receita') {
+                catReceita.push(name);
+                localStorage.setItem('gat_cat_receita', JSON.stringify(catReceita));
+            } else {
+                catDespesa.push(name);
+                localStorage.setItem('gat_cat_despesa', JSON.stringify(catDespesa));
             }
+            closeModal('modal-cat');
+            updateCatList();
+        }
+
+        function confirmDeleteCat(index) {
+            idParaExcluir = index;
+            document.getElementById('confirm-msg').innerText = "Excluir esta categoria?";
+            document.getElementById('confirm-delete-btn').onclick = () => {
+                if(configAtual === 'Receita') {
+                    catReceita.splice(idParaExcluir, 1);
+                    localStorage.setItem('gat_cat_receita', JSON.stringify(catReceita));
+                } else {
+                    catDespesa.splice(idParaExcluir, 1);
+                    localStorage.setItem('gat_cat_despesa', JSON.stringify(catDespesa));
+                }
+                closeModal('modal-confirm');
+                updateCatList();
+            };
+            openModal('modal-confirm');
         }
 
         // --- LÓGICA DE CONTAS A PAGAR ---
@@ -379,6 +420,7 @@
         function openConfirmDeleteConta() {
             idParaExcluir = document.getElementById('c-id').value;
             if(!idParaExcluir) return;
+            document.getElementById('confirm-msg').innerText = "Excluir esta conta?";
             document.getElementById('confirm-delete-btn').onclick = function() {
                 contas = contas.filter(x => x.id !== parseInt(idParaExcluir));
                 localStorage.setItem('gat_contas', JSON.stringify(contas));
@@ -448,6 +490,7 @@
         function openConfirmDeleteAgenda() {
             idParaExcluir = document.getElementById('a-id').value;
             if(!idParaExcluir) return;
+            document.getElementById('confirm-msg').innerText = "Excluir este agendamento?";
             document.getElementById('confirm-delete-btn').onclick = function() {
                 agenda = agenda.filter(x => x.id !== parseInt(idParaExcluir));
                 localStorage.setItem('gat_agenda', JSON.stringify(agenda));
@@ -486,7 +529,8 @@
         function prepareAdd(type) {
             document.getElementById('v-id').value = "";
             document.getElementById('entry-title-text').innerText = type;
-            document.getElementById('v-cat').innerHTML = (type === 'Receita' ? ['Uber', '99', 'Particular'] : ['Combustível', 'Manutenção', 'Alimentação']).map(c => `<option>${c}</option>`).join('');
+            const cats = type === 'Receita' ? catReceita : catDespesa;
+            document.getElementById('v-cat').innerHTML = cats.map(c => `<option>${c}</option>`).join('');
             document.getElementById('v-data').value = new Date().toISOString().split('T')[0];
             document.getElementById('v-val').value = "";
             document.getElementById('v-obs-entry').value = "";
@@ -498,7 +542,8 @@
             const item = db.find(x => x.id === id);
             document.getElementById('v-id').value = item.id;
             document.getElementById('entry-title-text').innerText = item.tipo;
-            document.getElementById('v-cat').innerHTML = (item.tipo === 'Receita' ? ['Uber', '99', 'Particular'] : ['Combustível', 'Manutenção', 'Alimentação']).map(c => `<option ${c === item.cat ? 'selected' : ''}>${c}</option>`).join('');
+            const cats = item.tipo === 'Receita' ? catReceita : catDespesa;
+            document.getElementById('v-cat').innerHTML = cats.map(c => `<option ${c === item.cat ? 'selected' : ''}>${c}</option>`).join('');
             document.getElementById('v-data').value = item.data;
             document.getElementById('v-val').value = item.val;
             document.getElementById('v-obs-entry').value = item.obs || "";
@@ -517,20 +562,17 @@
                 data: document.getElementById('v-data').value,
                 obs: document.getElementById('v-obs-entry').value
             };
-            
             if(!obj.val) return alert("Preencha o valor!");
-
             if(id) db = db.map(x => x.id === parseInt(id) ? obj : x);
             else db.push(obj);
-
             localStorage.setItem('gat_db', JSON.stringify(db));
-            closeAllPopups(); 
-            updateHome();
+            closeAllPopups(); updateHome();
         }
 
         function openConfirmDeleteEntry() {
             idParaExcluir = document.getElementById('v-id').value;
             if(!idParaExcluir) return;
+            document.getElementById('confirm-msg').innerText = "Excluir este lançamento?";
             document.getElementById('confirm-delete-btn').onclick = function() {
                 db = db.filter(x => x.id !== parseInt(idParaExcluir));
                 localStorage.setItem('gat_db', JSON.stringify(db));
@@ -572,7 +614,7 @@
         // --- BACKUP ---
         function openExportModal() {
             closeAllPopups();
-            const fullData = { db, agenda, contas, driverData };
+            const fullData = { db, agenda, contas, driverData, catReceita, catDespesa };
             const code = btoa(unescape(encodeURIComponent(JSON.stringify(fullData))));
             document.getElementById('backup-code-display').innerText = code;
             openModal('modal-export-backup');
@@ -580,8 +622,11 @@
 
         function copyBackupCode() {
             const code = document.getElementById('backup-code-display').innerText;
-            navigator.clipboard.writeText(code);
-            alert("Código copiado com sucesso!");
+            navigator.clipboard.writeText(code).then(() => {
+                alert("Código copiado com sucesso!");
+            }).catch(() => {
+                alert("Falha ao copiar o código. Selecione e copie manualmente.");
+            });
         }
 
         function openImportModal() {
@@ -592,23 +637,34 @@
 
         function processImportCode() {
             const code = document.getElementById('import-code-input').value.trim();
-            if(!code) return alert("Por favor, cole um código válido.");
+            if (!code) return alert("Cole o código de backup antes de restaurar!");
             try {
                 const decodedData = JSON.parse(decodeURIComponent(escape(atob(code))));
-                if(decodedData.db) localStorage.setItem('gat_db', JSON.stringify(decodedData.db));
-                if(decodedData.agenda) localStorage.setItem('gat_agenda', JSON.stringify(decodedData.agenda));
-                if(decodedData.contas) localStorage.setItem('gat_contas', JSON.stringify(decodedData.contas));
-                if(decodedData.driverData) localStorage.setItem('gat_driver', JSON.stringify(decodedData.driverData));
+                db = decodedData.db || [];
+                agenda = decodedData.agenda || [];
+                contas = decodedData.contas || [];
+                driverData = decodedData.driverData || null;
+                catReceita = decodedData.catReceita || ['Uber', '99', 'Particular'];
+                catDespesa = decodedData.catDespesa || ['Combustível', 'Manutenção', 'Alimentação'];
+                localStorage.setItem('gat_db', JSON.stringify(db));
+                localStorage.setItem('gat_agenda', JSON.stringify(agenda));
+                localStorage.setItem('gat_contas', JSON.stringify(contas));
+                localStorage.setItem('gat_driver', JSON.stringify(driverData));
+                localStorage.setItem('gat_cat_receita', JSON.stringify(catReceita));
+                localStorage.setItem('gat_cat_despesa', JSON.stringify(catDespesa));
                 alert("Dados restaurados com sucesso!");
-                location.reload();
-            } catch(e) {
-                alert("Erro: O código colado é inválido.");
+                closeAllPopups();
+                updateHome();
+                checkDriver();
+            } catch (error) {
+                alert("Erro ao processar o código de backup.");
             }
         }
 
-        // Inicialização
-        updateHome();
-        setTimeout(checkDailyAlerts, 500);
+        window.onload = function() {
+            showView('home-view');
+            checkDriver();
+        };
     </script>
 </body>
 </html>
