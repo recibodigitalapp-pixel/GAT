@@ -88,6 +88,7 @@
     <!-- MENU LATERAL -->
     <div id="sidebar" class="sidebar">
         <div class="menu-item" onclick="showView('home-view')"><i class="fas fa-home"></i> Início</div>
+        <div class="menu-item" onclick="showView('filter-view')"><i class="fas fa-filter"></i> Filtro</div>
         <div class="menu-item" onclick="showView('receipt-view')"><i class="fas fa-file-invoice"></i> Gerar Recibo</div>
         <div class="menu-item" onclick="showView('scheduled-view')"><i class="fas fa-calendar-alt"></i> Agendamentos</div>
         <div class="menu-item" onclick="showView('payable-view')"><i class="fas fa-file-invoice-dollar"></i> Contas a Pagar</div>
@@ -110,6 +111,20 @@
             </div>
             <div id="resumo-home" class="summary-card"></div>
             <div id="list-hoje"></div>
+        </div>
+    </div>
+
+    <!-- VIEW FILTRO -->
+    <div id="filter-view" class="view hidden">
+        <header><i class="fas fa-arrow-left" onclick="showView('home-view')"></i><span>FILTRAR PERÍODO</span><div style="width:24px"></div></header>
+        <div class="content-padding">
+            <label>Data Inicial</label>
+            <input type="date" id="f-inicio" class="modal-field">
+            <label>Data Final</label>
+            <input type="date" id="f-fim" class="modal-field">
+            <button class="btn-save" style="background:var(--scheduled-blue); margin-bottom: 20px;" onclick="aplicarFiltro()">FILTRAR VALORES</button>
+            <div id="filter-summary" class="summary-card hidden"></div>
+            <div id="list-filter"></div>
         </div>
     </div>
 
@@ -303,6 +318,10 @@
             if(viewId === 'home-view') updateHome();
             if(viewId === 'scheduled-view') updateAgenda();
             if(viewId === 'payable-view') updateContas();
+            if(viewId === 'filter-view') {
+                document.getElementById('list-filter').innerHTML = "";
+                document.getElementById('filter-summary').classList.add('hidden');
+            }
             closeAllPopups();
         }
 
@@ -311,6 +330,58 @@
             v = (parseFloat(v) / 100).toFixed(2).replace(".", ",");
             v = v.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
             i.value = "R$ " + v;
+        }
+
+        // --- LÓGICA DE FILTRO ---
+        function aplicarFiltro() {
+            const ini = document.getElementById('f-inicio').value;
+            const fim = document.getElementById('f-fim').value;
+            
+            if(!ini || !fim) return alert("Selecione as duas datas!");
+
+            const filtrados = db.filter(item => item.data >= ini && item.data <= fim);
+            
+            let r = 0, d = 0;
+            filtrados.forEach(e => {
+                let v = parseFloat(e.val.replace(/[R$\s.]/g, "").replace(",", "."));
+                if(isNaN(v)) v = 0;
+                e.tipo === 'Receita' ? r += v : d += v;
+            });
+
+            const summary = document.getElementById('filter-summary');
+            summary.classList.remove('hidden');
+            summary.innerHTML = `
+                <div style="font-size:20px; color:${(r-d) >= 0 ? 'var(--revenue-green)' : 'var(--expense-red)'}"><b>Saldo: R$ ${(r-d).toFixed(2).replace('.', settings=',')}</b></div>
+                <div class="summary-grid">
+                    <div class="summary-item"><span>Total Receitas</span><span class="summary-val">R$ ${r.toFixed(2).replace('.',',')}</span></div>
+                    <div class="summary-item"><span>Total Despesas</span><span class="summary-val">R$ ${d.toFixed(2).replace('.',',')}</span></div>
+                </div>
+            `;
+
+            const container = document.getElementById('list-filter');
+            container.innerHTML = filtrados.length ? filtrados.map(e => `
+                <div class="list-item" onclick="editEntry(${e.id})">
+                    <div>
+                        <span style="font-weight:600">${e.cat}</span><br>
+                        <small>${e.data.split('-').reverse().join('/')}</small>
+                    </div>
+                    <div style="text-align:right">
+                        <b style="color: ${e.tipo === 'Receita' ? 'var(--revenue-green)' : 'var(--expense-red)'}">${e.val}</b><br>
+                        <i class="fas fa-trash-alt" style="color:#ccc; font-size:12px" onclick="event.stopPropagation(); openConfirmDeleteEntryFilter(${e.id})"></i>
+                    </div>
+                </div>`).join('') : '<p style="text-align:center; color:#999">Nada encontrado neste período.</p>';
+        }
+
+        function openConfirmDeleteEntryFilter(id) {
+            idParaExcluir = id;
+            document.getElementById('confirm-msg').innerText = "Excluir este lançamento?";
+            document.getElementById('confirm-delete-btn').onclick = function() {
+                db = db.filter(x => x.id !== parseInt(idParaExcluir));
+                localStorage.setItem('gat_db', JSON.stringify(db));
+                closeModal('modal-confirm');
+                aplicarFiltro(); // Recarrega a lista filtrada
+            };
+            openModal('modal-confirm');
         }
 
         // --- LÓGICA DE CONFIGURAÇÃO DE CATEGORIAS ---
@@ -566,7 +637,9 @@
             if(id) db = db.map(x => x.id === parseInt(id) ? obj : x);
             else db.push(obj);
             localStorage.setItem('gat_db', JSON.stringify(db));
-            closeAllPopups(); updateHome();
+            closeAllPopups(); 
+            updateHome();
+            if(!document.getElementById('filter-view').classList.contains('hidden')) aplicarFiltro();
         }
 
         function openConfirmDeleteEntry() {
@@ -578,6 +651,7 @@
                 localStorage.setItem('gat_db', JSON.stringify(db));
                 closeAllPopups();
                 updateHome();
+                if(!document.getElementById('filter-view').classList.contains('hidden')) aplicarFiltro();
             };
             openModal('modal-confirm');
         }
@@ -607,6 +681,7 @@
             document.getElementById('p_motorista').innerText = driverData.motorista;
             document.getElementById('p_cliente').innerText = document.getElementById('r_cliente').value;
             document.getElementById('p_valor').innerText = document.getElementById('r_valor').value;
+            document.getElementById('p_valor_txt').innerText = document.getElementById('r_valor').value;
             document.getElementById('receipt-step-1').classList.add('hidden');
             document.getElementById('receipt-step-2').classList.remove('hidden');
         }
